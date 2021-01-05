@@ -13,9 +13,9 @@
 
 ## INDEX
 
-1. [Intellij Springboot start](#intellij-springboot-start)
+1. [Intellij Springboot start](#1-intellij-springboot-start)
 
-   1.1 [Gradle 프로젝트를 Spring Boot 프로젝트로 변경하기](#gradle-프로젝트를-spring-boot-프로젝트로-변경하기)
+   1.1 [Gradle 프로젝트를 Spring Boot 프로젝트로 변경하기](#11-gradle-프로젝트를-spring-boot-프로젝트로-변경하기)
 
 ---
 
