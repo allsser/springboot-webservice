@@ -30,10 +30,10 @@
 * 버전 업데이트를 하기 위해서 CMD에서 기존 프로젝트가 있는 디렉토리로 이동한 후에 아래 명령어 입력
 
   > gradlew wrapper --gradle-version 6.7.1
+  
 
 
-
-**Gradle 프로젝트를 Spring Boot 프로젝트로 변경하기**
+**그레이들 프로젝트를 스프링 부트 프로젝트로 변경하기**
 
 ```build.gradle
 plugins { //(1)
