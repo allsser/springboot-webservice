@@ -202,3 +202,14 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
 >* CppUnit - C++
 >* NUnit - .net
 
+
+
+#### 2.2 Hello Controller 테스트 코드 작성하기
+
+1. 패키지 안에 있는 Java 디렉토리에 새로운 패키지**(New -> Package)**를 생성한다. 일반적으로  패키지 명은 **웹 사이트 주소의 역순**으로 한다. Ex) admin.allsser.com(사이트의 주소 보통 Group Id 이다.)이라면 패키지 명은 com.allsser.admin 이다. 최종적으로 springboot라는 프로젝트 명을 사용하여 com.allsser.admin.springboot가 된다.
+
+2. 새로 만든 패키지(com.allsser.admin) 아래에 Java 클래스를 생성한다. 클래스의 이름은 Application으로 한다.
+
+   
+
+3. 
