@@ -7,7 +7,7 @@
 * Spring Boot 2.4.1
 * Gradle 6.7.1
 * IntelliJ IDEA 2020.3
-* Junit5
+* JUnit 5
 
 
 
@@ -24,6 +24,10 @@
    2.1 [테스트 코드 소개](#21-테스트-코드-소개)
    
    2.2 [Hello Controller 테스트 코드 작성하기](#22-Hello-Controller-테스트-코드-작성하기)
+   
+   2.3 [롬복 소개 및 설치](#23_롬복_소개_및_설치)
+   
+   2.4 [HelloController 코드를 롬복으로 전환하기](#24_HelloController_코드를_롬복으로_전환하기)
 
 ---
 
@@ -113,7 +117,7 @@ repositories { // 각종 의존성 (라이브러리)들을 어떤 원격 저장�
 
 (2)  test { ... }
 
-* Junit5를 사용하기 위해서는 필수로 선언되어야 한다.
+* JUnit5를 사용하기 위해서는 필수로 선언되어야 한다.
 
 (3)  implementation, testlmplementation
 
@@ -216,40 +220,34 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
 
 3. 아래와 같이 코드를 작성해 준다.
 
-   > import org.springframework.boot.SpringApplication;
-   >
-   > import org.springframework.boot.autoconfigure.SpringBootApplication;
-   >
-   > 
-   >
-   > @SpringBootApplication	// {1}
-   >
-   > public class Application {
-   >
-   > ​	public static void main(String[] args) {
-   >
-   > ​		SpringApplicaiton.run(Application.class, args);	// {2}
-   >
-   > ​	}
-   >
-   > }
-
+   ```Application
+   import org.springframework.boot.SpringApplication;
+   import org.springframework.boot.autoconfigure.SpringBootApplication;
    
-
+   @SpringBootApplication	// {1}
+   public class Application {
+   	public static void main(String[] args) {
+   		SpringApplicaiton.run(Application.class, args);	// {2}
+   	}
+   }
+   ```
+   
+   
+   
    * **Application 클래스**는 앞으로 만들 프로젝트의 **메인 클래스**이다.
    * {1} **@SpringBootApplication**으로 인해 스프링 부트의 자동 설정, 스프링 **Bean** 일기와 생성을 자동으로 설정된다.
    * {1}**@SpringBootApplication 이 있는 위치부터 설정을 읽기** 때문에 항상 **프로젝트 최상단에 위치하고 있어야 한다.**
-   * {2}main 메소드에서 실행하는 **SpringApplication.run**으로 인해 내장 *WAS를 실행시켜 준다.
-
-   ```WAS
+* {2}main 메소드에서 실행하는 **SpringApplication.run**으로 인해 내장 *WAS를 실행시켜 준다.
+   
+```WAS
    WAS(Web Application Server, 웹 애플리케이션 서버)
    -내장 WAS란 외부에 WAS를 두지 않고 애플리케이션을 실행할 때 내부에서 WAS를 실행하는 것을 뜻한다.
    -이렇게 하면 항상 서버에 톰켓을 설치할 필요가 없어지게 되고, 스프링 부트로  만들어진 Jar 파일로 실행하면 된다.
    -내장 WAS를 사용하면 '언제 어디서나 같은 환경에서 스프링 부트를 배포'할 수 있다.
-   ```
-
+```
    
-
+   
+   
 4. 테스트를 위한 **Controller**를 만들어야 한다. 위에 만든 패키지 하위에 **web 패키지를 만들어 준다.
 
    ![web](images/web.PNG)
@@ -262,28 +260,179 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
 
    생성됬으면 간단한 API를 생성해 준다.
 
-   >import org.springframework.web.bind.annotation.GetMapping;
-   >
-   >import org.springframework.web.bind.annotation.RestController;
-   >
-   >
-   >
-   >@RestController	// {1}
-   >
-   >public class HelloController {
-   >
-   >​	
-   >
-   >​	@GetMapping("/hello")}	// {2}
-   >
-   >​	public String hello() {
-   >
-   >​		return "hello";
-   >
-   >}
+   ```HelloController
+   import org.springframework.web.bind.annotation.GetMapping;
+   import org.springframework.web.bind.annotation.RestController;
+   
+   @RestController	// {1}
+   public class HelloController {
+   
+   @GetMapping("/hello")}	// {2}
+   public String hello() {
+   	return "hello";
+   }
+   ```
 
-   * {1}**RestController**
+   
+
+   * {1} **RestController**
      * 컨트롤러를 JSON을 반환하여 컨트롤러로 만들어 준다.
      * 예전에는 @ResponseBody를 각 메소드마다 선언했던 것을 한번에 사용할 수 있게 해준다.
+     
+   * {2} **GetMapping**
 
-6. ㄷ
+     * HTTP Method인 Get의 요청을 받을 수 있는 API를 만들어 준다.
+     * 이 프로젝트는 /hello로 요청이 오면 문자열 hello를 반환하는 기능을 가지게 되었다.
+
+     
+
+6. 테스트 코드를 검증하기 위해 main 디렉토리가 이난 test 디렉토리로 가서 위와 같이 com.allsser.book.springboot를 생성해 준다.
+
+   ![testSpringboot](images/testSpringbook.PNG)
+
+   
+
+7. 생성된 클래스에 아래와 같이 테스트 코드를 추가해 준다.
+
+   ```HelloControllerText
+   import org.junit.jupiter.api.Test;	// {1}
+   import org.junit.jupiter.api.extension.ExtendWith;
+   import org.springframework.beans.fectory.annotation.Autowired;
+   import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+   import org.springframework.test.context.junit.jupiter.SpringExtension;
+   import org.springframework.test.web.servlet.MockMvc;
+   
+   import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+   import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+   import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+   
+   @Extend(SpringExtension.class)	// {2}
+   @WebMvcTest(controllers = HelloController.class)	// {3}
+   public class HelloControllerTset {
+   
+   	@Autowired	// {4}
+   	private MockMvc mvc;	// {5}
+   	
+   	@Test
+   	public void hello_to_return() throws Exception {
+   		String hello = "hello";
+   		
+   		mvc.perform(get("/hello"))		// {6}
+   				.andExpect(status().isOk())		// {7}
+   				.andExpect(content().string(hello));	//{8}
+   	}
+   }
+   ```
+
+   * {1} **.Tset** 
+
+     * JUnit4 에서 JUnit5로 넘어오면서 달라졌다.(교재에서는 JUnit4 사용, 현재 프로젝트는 JUnit5)
+     * import 패키지 : org.junit.Test (JUnit4) -> **org.junit.jupiter.api.Tset (JUnit5)**
+
+   * {2} **@Extend(SpringExtension.class)**
+
+     * 어노테이션 : @RunWith (Junit4) -> **@Extend(JUnit5)**
+     * import 패키지 : org.junit.runner.RunWith (Junit4) -> **org.junit.jupiter.api.extension.ExtenWith (JUnit5)**
+     * 테스트를 진행할 떄 Junit에 내장된 실행자 외에 다른 실행자를 실행시킨다.
+     * 여기서는 **SpringExtension (JUnit)**라는 스프링 실행자를 사용한다. (SpringRunner (Junit4))
+     * 즉, 스프링 부트 테스트와 JUnit 사이에 연결자 역할을 한다.
+
+   * {3} **@WebMvcTest**
+
+     * 여러 스프링 테스트 어노테이션 중, Web(Spring MVC)에 집중할 수 있는 어노테이션이다.
+     * 선언할 경우 @Controller, @ControllerAdvice 등을 사용할 수 있다.
+     * 단, @Service, @Component, @Repository 등은 사용할 수 없다.
+     * 어기서는 컨트롤러만 사용하기 때문에 선언한다.
+
+   * {4} **@Autowired**
+
+     * 스프링이 관리하는 빈(bean)을 주입 받는다.
+
+   * {5} **private MockMvc mvc**
+
+     * 웹 API를 테스트할 때 사용한다.
+     * 스프링 MVC 테스트의 시작점이다.
+     * 이 클래스를 통해 HTTP GET, POST 등에 대한 API 테스트를 할 수 있다.
+
+   * {6} **mvc.perfrom(get("/hello"))**
+
+     * MockMvc를 통해 /hello 주소로 HTTP GET 요청을 한다.
+     * 체이닝이 지원되어 아래와 같이 여러 검증 기능을 이어서 선언할 수 있다.
+
+   * {7} **.andExpect(status().isOk())**
+
+     * mvc.perform의 결과를 검증한다.
+     * HTTP Header의 Status를 검증한다.
+     * 우리가 흔히 알고 있는 200, 404, 500 등의 상태를 검증한다.
+     * 여기서는 OK 즉, 200인지 아닌지를 검증한다.
+
+   * {8} **.andExpect(content().string(hello))**
+
+     * mvc.perform의 결과를 검증한다.
+     * 응답 본문의 내용을 검증한다.
+     * Controller에서 "hello"를 리턴하기 때문에 이 값이 맞는지 검증한다.
+
+     
+
+   (JUnit4 -> JUnit5 변경된 사항 [참고 블로그](https://jojoldu.tistory.com/539))
+
+   
+
+8. 테스트 코드 실행
+
+   ![testCode](images/testCode.PNG)
+
+   메소드의 왼쪽 화살표를 클릭하여 실행한다.
+
+   
+
+   ![testCodeOK](images/testCodeOK.PNG)
+
+   테스트 코드가 성공하면 다음과 같이 나온다.
+
+   
+
+9. 수동으로 실행하여 정상적인 값 출력하기
+
+   * Application.java 파일로 이동하여 **main 메소드의 왼쪽 화살표 버튼을 클릭**해 준다.
+
+   ![ApplicationStart](images/ApplicationStart.PNG)
+
+   * 실행해 보면 톰캣 서버가 8080 포트로 실행된 것을 로그에서 확인할 수 있다.
+
+     ![Application8080](images/Application8080.PNG)
+
+   * **localhost:8080/hello**로 접속하면 hello가 잘 나오는 것을 확인할 수 있다.
+
+     ![localhost_hello](images/localhost_hello.PNG)
+
+   * 테스트 코드의 결과와 같은 것을 확인할 수 있다. **테스트 코드는 꼭 따라 해야 한다.**그래야 견고한 소프트웨어를 만들수 있다. 절대 **수동으로 검증하고 테스트 코드를 작성하진 않는다.**
+   * 교재 버전과 현재 실습 버전과 다르다. 만약, 교재 그대로 실습을 진행하게 되면 수동으로 실행시 localhost:8080/hello 로 접속하게 되면 "아이디와 비번을 쳐서 접속하라는 로그인 창"이 뜬다. (이거 버전때문인지 모르고 교재 그대로 진행했다가 로그인 창이 게속 열려서 고생했다. 버전 중요!!)
+
+
+
+#### 2.3 롬복 소개 및 설치
+
+* **자바 개발자들의 필수 라이브러리 롬복**
+
+* 롬복은 자바 개발할 때 자주 사용하는 코드 **Getter, Setter, 기본생성자, toString 등**을 어노테니션으로 자동 생성해 준다.
+
+* build.gradle에 **implementation('org.projectlombok:lombok')** 코드를 추가해 준다.
+
+  ![build_lombok](images/build_lombok.PNG)
+
+  ​			Refresh로 새로고침해서 라이브러리(의존성이라고도 한다)를 내려 반는다.
+
+* 롬복을 설치하는 방법은 **플러그인 Action을 검색한다.(Ctrl + Shitf + A)**창이 열리면 **Plugins**를 검색하여 **Marketplace**로 이동하여 **"lombok"**을 검색한다. 검색결과에서 나온 **Lombok Plugin**버튼을 눌려 설치해 준다.
+
+* 마지막으로 **Enable annotation processing**을 체크해 준다.
+
+![lombokCheck](images/lombokCheck.PNG)
+
+* 롬복은 프로젝트마다 설정해야 한다. 플러그인 설치는 한번만 하면 되지만, build.gradle에 라이브러리를 추가하는 것과 Enable annotation processing를 체크하는 것은 프로젝트마다 진행해야 한다.
+* 롬복 설정을 했으니 이제 기존 코드를 **롬복으로 리팩토링**해준다.
+
+
+
+#### 2.4 HelloController 코드를 롬복으로 전환하기
+
