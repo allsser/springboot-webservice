@@ -206,10 +206,82 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
 
 #### 2.2 Hello Controller 테스트 코드 작성하기
 
-1. 패키지 안에 있는 Java 디렉토리에 새로운 패키지**(New -> Package)**를 생성한다. 일반적으로  패키지 명은 **웹 사이트 주소의 역순**으로 한다. Ex) admin.allsser.com(사이트의 주소 보통 Group Id 이다.)이라면 패키지 명은 com.allsser.admin 이다. 최종적으로 springboot라는 프로젝트 명을 사용하여 com.allsser.admin.springboot가 된다.
+1. 패키지 안에 있는 Java 디렉토리에 새로운 패키지**(New -> Package)**를 생성한다. 일반적으로  패키지 명은 **웹 사이트 주소의 역순**으로 한다. Ex) book.allsser.com(사이트의 주소 보통 Group Id 이다.)이라면 패키지 명은 com.allsser.book 이다. 최종적으로 springboot라는 프로젝트 명을 사용하여 com.allsser.book.springboot가 된다.
 
-2. 새로 만든 패키지(com.allsser.admin) 아래에 Java 클래스를 생성한다. 클래스의 이름은 Application으로 한다.
+2. 새로 만든 패키지(com.allsser.book.springboot) 아래에 Java 클래스를 생성한다. 클래스의 이름은 Application으로 한다.
+
+   ![Application](C:\Users\Chan\Desktop\springboot\images\Application.PNG)
+
+3. 아래와 같이 코드를 작성해 준다.
+
+   > import org.springframework.boot.SpringApplication;
+   >
+   > import org.springframework.boot.autoconfigure.SpringBootApplication;
+   >
+   > 
+   >
+   > @SpringBootApplication	// {1}
+   >
+   > public class Application {
+   >
+   > ​	public static void main(String[] args) {
+   >
+   > ​		SpringApplicaiton.run(Application.class, args);	// {2}
+   >
+   > ​	}
+   >
+   > }
 
    
 
-3. 
+   * **Application 클래스**는 앞으로 만들 프로젝트의 **메인 클래스**이다.
+   * {1} **@SpringBootApplication**으로 인해 스프링 부트의 자동 설정, 스프링 **Bean** 일기와 생성을 자동으로 설정된다.
+   * {1}**@SpringBootApplication 이 있는 위치부터 설정을 읽기** 때문에 항상 **프로젝트 최상단에 위치하고 있어야 한다.**
+   * {2}main 메소드에서 실행하는 **SpringApplication.run**으로 인해 내장 *WAS를 실행시켜 준다.
+
+   ```WAS
+   WAS(Web Application Server, 웹 애플리케이션 서버)
+   -내장 WAS란 외부에 WAS를 두지 않고 애플리케이션을 실행할 때 내부에서 WAS를 실행하는 것을 뜻한다.
+   -이렇게 하면 항상 서버에 톰켓을 설치할 필요가 없어지게 되고, 스프링 부트로  만들어진 Jar 파일로 실행하면 된다.
+   -내장 WAS를 사용하면 '언제 어디서나 같은 환경에서 스프링 부트를 배포'할 수 있다.
+   ```
+
+   
+
+4. 테스트를 위한 **Controller**를 만들어야 한다. 위에 만든 패키지 하위에 **web 패키지를 만들어 준다.
+
+   ![web](C:\Users\Chan\Desktop\springboot\images\web.PNG)
+
+   web 패키지 안에 **컨트롤러와 관련된 클래스들은 모두 이 패키지** 안에서 관리해 준다.
+
+   
+
+5. HelloController 라는 이름의 클래스를 만들어 준다.
+
+   생성됬으면 간단한 API를 생성해 준다.
+
+   >import org.springframework.web.bind.annotation.GetMapping;
+   >
+   >import org.springframework.web.bind.annotation.RestController;
+   >
+   >
+   >
+   >@RestController	// {1}
+   >
+   >public class HelloController {
+   >
+   >​	
+   >
+   >​	@GetMapping("/hello")}	// {2}
+   >
+   >​	public String hello() {
+   >
+   >​		return "hello";
+   >
+   >}
+
+   * {1}**RestController**
+     * 컨트롤러를 JSON을 반환하여 컨트롤러로 만들어 준다.
+     * 예전에는 @ResponseBody를 각 메소드마다 선언했던 것을 한번에 사용할 수 있게 해준다.
+
+6. ㄷ
