@@ -25,9 +25,9 @@
    
    2.2 [Hello Controller 테스트 코드 작성하기](#22-Hello-Controller-테스트-코드-작성하기)
    
-   2.3 [롬복 소개 및 설치](#23_롬복_소개_및_설치)
+   2.3 [롬복 소개 및 설치](#23-롬복-소개-및-설치)
    
-   2.4 [HelloController 코드를 롬복으로 전환하기](#24_HelloController_코드를_롬복으로_전환하기)
+   2.4 [HelloController 코드를 롬복으로 전환하기](#24-HelloController-코드를-롬복으로-전환하기)
 
 ---
 
