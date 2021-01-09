@@ -288,7 +288,7 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
 
 6. 테스트 코드를 검증하기 위해 main 디렉토리가 이난 test 디렉토리로 가서 위와 같이 com.allsser.book.springboot를 생성해 준다.
 
-   ![testSpringboot](images/testSpringbook.PNG)
+   ![testSpringbook](images/testSpringBook.PNG)
 
    
 
