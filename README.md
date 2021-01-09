@@ -250,7 +250,7 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
 
 4. 테스트를 위한 **Controller**를 만들어야 한다. 위에 만든 패키지 하위에 **web 패키지를 만들어 준다.
 
-   ![web](C:\Users\Chan\Desktop\springboot\images\web.PNG)
+   ![web](images\web.PNG)
 
    web 패키지 안에 **컨트롤러와 관련된 클래스들은 모두 이 패키지** 안에서 관리해 준다.
 
