@@ -210,7 +210,7 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
 
 2. 새로 만든 패키지(com.allsser.book.springboot) 아래에 Java 클래스를 생성한다. 클래스의 이름은 Application으로 한다.
 
-   ![Application](C:\Users\Chan\Desktop\springboot\images\Application.PNG)
+   ![Application](images/Application.PNG)
 
 3. 아래와 같이 코드를 작성해 준다.
 
@@ -250,7 +250,7 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
 
 4. 테스트를 위한 **Controller**를 만들어야 한다. 위에 만든 패키지 하위에 **web 패키지를 만들어 준다.
 
-   ![web](images\web.PNG)
+   ![web](images/web.PNG)
 
    web 패키지 안에 **컨트롤러와 관련된 클래스들은 모두 이 패키지** 안에서 관리해 준다.
 
