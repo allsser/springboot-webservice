@@ -28,6 +28,10 @@
    2.3 [롬복 소개 및 설치](#23-롬복-소개-및-설치)
    
    2.4 [HelloController 코드를 롬복으로 전환하기](#24-HelloController-코드를-롬복으로-전환하기)
+   
+3. [스프링 부트에서 JPA로 데이터베이스 다루기](#3-스프링-부트에서-JPA로-데이터베이스-다루기)
+
+   3.1 [JPA란?](#31-JPA란?)
 
 ---
 
@@ -238,16 +242,16 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
    * {1} **@SpringBootApplication**으로 인해 스프링 부트의 자동 설정, 스프링 **Bean** 일기와 생성을 자동으로 설정된다.
    * {1}**@SpringBootApplication 이 있는 위치부터 설정을 읽기** 때문에 항상 **프로젝트 최상단에 위치하고 있어야 한다.**
 * {2}main 메소드에서 실행하는 **SpringApplication.run**으로 인해 내장 *WAS를 실행시켜 준다.
-   
+  
 ```WAS
    WAS(Web Application Server, 웹 애플리케이션 서버)
    -내장 WAS란 외부에 WAS를 두지 않고 애플리케이션을 실행할 때 내부에서 WAS를 실행하는 것을 뜻한다.
    -이렇게 하면 항상 서버에 톰켓을 설치할 필요가 없어지게 되고, 스프링 부트로  만들어진 Jar 파일로 실행하면 된다.
    -내장 WAS를 사용하면 '언제 어디서나 같은 환경에서 스프링 부트를 배포'할 수 있다.
 ```
+
    
-   
-   
+
 4. 테스트를 위한 **Controller**를 만들어야 한다. 위에 만든 패키지 하위에 **web 패키지를 만들어 준다.
 
    ![web](images/web.PNG)
@@ -267,9 +271,10 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
    @RestController	// {1}
    public class HelloController {
    
-   @GetMapping("/hello")}	// {2}
-   public String hello() {
-   	return "hello";
+   	@GetMapping("/hello")}	// {2}
+   	public String hello() {
+   		return "hello";
+   	}
    }
    ```
 
@@ -334,7 +339,7 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
      * 어노테이션 : @RunWith (Junit4) -> **@Extend(JUnit5)**
      * import 패키지 : org.junit.runner.RunWith (Junit4) -> **org.junit.jupiter.api.extension.ExtenWith (JUnit5)**
      * 테스트를 진행할 떄 Junit에 내장된 실행자 외에 다른 실행자를 실행시킨다.
-     * 여기서는 **SpringExtension (JUnit)**라는 스프링 실행자를 사용한다. (SpringRunner (Junit4))
+     * 여기서는 **SpringExtension (JUnit)** 라는 스프링 실행자를 사용한다. (SpringRunner (Junit4))
      * 즉, 스프링 부트 테스트와 JUnit 사이에 연결자 역할을 한다.
 
    * {3} **@WebMvcTest**
@@ -435,4 +440,180 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
 
 
 #### 2.4 HelloController 코드를 롬복으로 전환하기
+
+* **테스트 코드가 우리의 코드를 지켜주기 때문에** 롬복으로 변경하고 문제가 생기는지 돌려보면 알 수 있다.
+
+
+
+1. web 패키지에 dto 패키지를 추가해 준다. 앞으로 **모든 응답 Dto는 이 Dto 패키지에 추가**하겠다. 이 패키지에 HelloResponseDto를 생성해 준다.
+
+   ![Dto](images/Dto.PNG)
+
+   
+
+   HelloResponseDto 코드를 작성해 준다.
+
+   ```HelloResponseDto
+   import lombok.Getter;
+   import lombok.RequiredArgsConstructor;
+   
+   @Getter	// {1}
+   @RequiredArgsConstructor	// {2}
+   public class HelloResponseDto {
+   
+   	private final String name;
+   	private final int amount;
+   
+   }
+   ```
+
+   * {1} **@Getter**
+     * 선언된 모든 필드의 get 메소드를 생성해 준다.
+   * {2} **@RequiredArgsConstructor**
+     * 선언된 모든 final 필드가 포함된 생성자를 생성해준다.
+     * final이 없는 필드는 생성자에 포함되지 않는다.
+
+   
+
+2.  이 Dto에 적용된 롬복이 잘 작동하는지 간단한 테스트 코드를 작성한다.
+
+   * 테스트 코드의 작성은 위와 같이  똑같은 패키지를 추가해주고 작성한다.
+
+     ![dtoTest](images/dtoTest.PNG)
+
+   * HelloRespnseDtoTest 클래스의 코드를 추가해 준다.
+
+     ```HelloResponseDtoTest
+     import org.junit.Tset;
+     import static org.assertj.core.api.Assertions.assertThat;
+     
+     public class HelloResponseDtoTest {
+     	
+     	@Test
+     	public void 롬복_기능_테스트() {
+     		//given
+     		String name = "test";
+     		int amount = 1000;
+     		
+     		//when
+     		HelloResponseDto dto = new HelloResponseDto(name, amount);
+     		
+     		//then
+     		assertThat(dto.getName()).isEqualTo(name);	// {1}, {2}
+     		assertThat(dto.getAmount()).isEqualTo(amount);
+     	}
+     }
+     ```
+
+   * {1} **assertThat**
+
+     * assertj라는 테스트 검증 라이브러리의 검증 메소드이다.
+     * 검증하고 싶은 대상을 메소드 인자로 받는다.
+     * 메소드 체이닝이 지원되어 isEqualTo와 같이 메소드를 이어서 사용할 수 있다.
+
+   * {2} **isEqualTo**
+
+     * assertj의 동등 비교 메소드이다.
+     * assertThat에 있는 값과 isEqualTo의 값을 비교해서 같을 때만 성공이다.
+
+   * 테스트 결과
+
+     ![dtoTestResult](images/dtoTestResult.PNG)
+
+   * 정상적으로 기능을 수행하는 것을 확인해 볼 수 있다. 롬복의 **@Getter**로 **get 메소드**가, **@RequiredArgsConstructor**로 생성자가 자동으로 생성되는 것이 증명되었다.
+
+     
+
+3.  HelloController에도 새로 만든 ResponseDto를 사용하도록 코드를 추가해 준다.
+
+   ```HelloController
+   @GetMapping("/hello/dto")
+   public HelloResponseDto helloDto(@RequestParam("name") String name,	// {1}
+   								 @RequestParam("amount") int amount) {
+   								 
+   	return new HelloResponseDto(name, amount);
+   	
+   }
+   ```
+
+   * {1} **@RequestParam**
+
+     * 외부에서 API로 넘긴 파라미터를 가져오는 어노테이션이다.
+     * 여기서는 외부에서 name (@RequestParam("name")) 이란 이름으로 파라미터를 메소드 파라미터 name(String name)에 저장하게 된다.
+
+   * name과 amount는 API를 호출하는 곳에서 넘겨준 값들이다. 추가된 API를 테스트 하는 코드를 HelloControllerTest에 추가한다,
+
+     ```HelloControllerTest
+     import org.junit.jupiter.api.Test;
+     import org.junit.jupiter.api.extension.ExtendWith;
+     import org.springframework.beans.factory.annotation.Autowired;
+     import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+     import org.springframework.test.context.junit.jupiter.SpringExtension;
+     import org.springframework.test.web.servlet.MockMvc;
+     
+     import static org.hamcrest.Matchers.is;
+     import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+     import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+     
+     @ExtendWith(SpringExtension.class)
+     @WebMvcTest(controllers = HelloController.class)
+     public class HelloControllerTest {
+     
+         @Autowired
+         private MockMvc mvc;
+     
+         @Test
+         public void hello_to_return() throws Exception {
+             String hello = "hello";
+     
+             mvc.perform(get("/hello"))
+                     .andExpect(status().isOk())
+                     .andExpect(content().string(hello));
+         }
+     
+         @Test
+         public void helloDto가_리던된다() throws Exception {
+             String name = "hello";
+             int amount = 1000;
+     
+             mvc.perform(get("/hello/dto")
+             		.param("name", name)	// {1}
+             		.param("amount", String.valueOf(amount)))
+                     .andExpect(status().isOk())
+                     .andExpect(jsonPath("$.name", is(name)))	// {2}
+                     .andExpect(jsonPath("$.amount", is(amount)));
+         }
+     }
+     ```
+
+   * {1} **param**
+
+     * API 테스트할 때 사용할 요청 파라미터를 설정한다.
+     * 단, 값은 String만 허용한다.
+     * 그래서 숫자/날짜 드으이 데이터도 등록할 때는 문자열로 변경해야만 가능하다.
+
+   * {2} **jsonPath**
+
+     * JSON 응답값을 필드별로 검증할 수 있는 메소드이다.
+     * $를 기준으로 필드명을 명시한다.
+     * 여기서는 name과 amount를 검증하니 $.name, $.amount로 검증한다.
+
+   * 테스트 실행 결과 JSON이 리턴되는 API 역시 정상적으로 테스트가 통과하는 것을 확인할 수 있다.
+
+      ![dtoTestResult](images/dtoTestResult.PNG)
+
+
+
+---
+
+### 3. 스프링 부트에서 JPA로 데이터베이스 다루기
+
+* 보통 스프링을 배울 때 MyBatis(iBatis)와 같은 SQL Mapper를 이용하여 테이터베이스 쿼리를 작성했다. 그러다 보니 실제로 개발하는 시간보다 SQL을 다루는 시간이 더 많을 경우도 있다.
+* 위의 문제를 해결하기 위해 **JPA라는 자바 표준 ORM(Object Relational Mapping)**기술을 사용하게 되었다.
+* **ORM**은 **객체를 매핑**하는 것이고, **SQL Mapper(MyBatis, iBatis)**는 **쿼리를 매핑**한다.
+* 아직 SI 환경에서는 **Spring & MyBatis**를 많이 사용하지만, 자사 서비스를 개발하는 곳에서는 **SpringBoot & JPA**를 전사 표준으로 사용하고 있다. 기존 프로젝트 환경을 개편하는 곳들도 대부분 JPA를 선택하고 있다.
+
+
+
+#### 3.1 JPA란?
 
