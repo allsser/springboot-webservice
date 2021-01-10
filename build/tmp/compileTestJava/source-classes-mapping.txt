@@ -1,2 +1,4 @@
 com/allsser/book/springboot/web/HelloControllerTest.java
  com.allsser.book.springboot.web.HelloControllerTest
+com/allsser/book/springboot/web/dto/HelloResponseDtoTest.java
+ com.allsser.book.springboot.web.dto.HelloResponseDtoTest
