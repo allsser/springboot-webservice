@@ -1,7 +1,5 @@
-package com.allsser.book.springboot.web.domain.posts;
+package com.allsser.book.springboot.domain.posts;
 
-import com.allsser.book.springboot.domain.posts.Posts;
-import com.allsser.book.springboot.domain.posts.PostsRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
