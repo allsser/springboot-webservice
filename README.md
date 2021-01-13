@@ -39,9 +39,9 @@
    
    3.4 [등록/수정/조회 API 만들기](#34-등록수정조회-api-만들기)
    
-   3.5 [JPA Auditing으로 생성시간/수정시간 자동화하기](#35-JPA-Auditing으로-생성시간/수정시간-자동화하기)
+   3.5 [JPA Auditing으로 생성시간/수정시간 자동화하기](#35-jpa-auditing으로-생성시간수정시간-자동화하기)
    
-4. ### [머스테치로 화면 구성하기](#머스테치로-화면-구성하기)
+4. ### [머스테치로 화면 구성하기](#4-머스테치로-화면-구성하기)
 
 
 
@@ -1387,7 +1387,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 * domain 패키지에 **BaseTimeEntity 클래스**를 생성한다.
 
-  ![BaseTimeEntity](images/BaseTimeEntity.PNG)
+  ![BasetimeEntity](images/BasetimeEntity.PNG)
 
   **BaseTimeEntity**
 
