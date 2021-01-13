@@ -5,7 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Getter@NoArgsConstructor
+@Getter
+@NoArgsConstructor
 public class PostsSaveRequesrDto {
     private String title;
     private String content;
