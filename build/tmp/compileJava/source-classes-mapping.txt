@@ -23,3 +23,5 @@ com/allsser/book/springboot/service/posts/PostsService.java
  com.allsser.book.springboot.service.posts.PostsService
 com/allsser/book/springboot/web/PostsApiController.java
  com.allsser.book.springboot.web.PostsApiController
+com/allsser/book/springboot/web/IndexController.java
+ com.allsser.book.springboot.web.IndexController
