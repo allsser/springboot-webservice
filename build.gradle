@@ -21,6 +21,8 @@ test {
 dependencies {
 
     implementation('org.springframework.boot:spring-boot-starter-web')
+
+    // 머스테치
     implementation('org.springframework.boot:spring-boot-starter-mustache')
 
     // lombok
