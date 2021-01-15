@@ -1500,3 +1500,115 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 ### 4. 머스테치로 화면 구성하기
 
+#### 4.1 서버 템플릿 엔진과 머스테치
+
+* **템플릿 엔진이란?**
+  * **지정된 템플릿 데이터를** 합쳐서 HTML 문서를 출력한다.
+  * 템플릿 엔진에는 서버 사이드, 클라이언트 사이드 두 가지 종류가 있다. 둘은 작동영역이 다르다.
+
+* **서버 템플릿 엔진이란?**
+  * 서버에서 구동되는 템플릿 엔진으로 JSP, Freemarker가 있다.
+  * 서버에서 Java 코드로 문자열을 만든 후 서버에서 HTML로 변환하여 브라우저로 전달한다.
+* **클라이언트 템플릿 엔진이란?**
+  * 브라우저 위에서 작동하며 react, Vue.js 등이 있다.
+  * 브라우저에서 화면을 생성하기에 서버에서는 JSON, Xml 형식의 데이터만 전달하고 클라이언트에서 이를 혼합해 화면을 만든다.
+
+
+
+* **머스테치란?**
+  * [머스테치](http://mustache.github.io/)는 **수많은 언어를 지원하는 가장 심플한 템플릿 엔진**이다.
+  * 자바에서 사용될 때는 서버 템플릿 엔진으로, 자바스크립트에서 사용될 때는 클라이언트 템플릿 엔진으로 모두 사용 가능하다.
+* **머스테치의 장잠**
+  * 문법이 다른 템플릿 엔진보다 심플하다.
+  * 로직 코드를 사용할 수 없어 View의 역할과 서버의 역할이 명확하게 분리된다.
+  * Mustache.js와 Mustache.java 2가지 다 있어, 하나의 문법으로 클라이언트/서버 템플릿 모두 사용 가능하다.
+* **머스테치 설치**
+  * 인텔리제이의 플러그인에서 'mustache'를 검색하여 다운 받아 준다.
+
+
+
+#### 4.2 기본 페이지 만들기
+
+* **머스테치 스타터 의존성을 build.gradle에 등록한다.**
+
+  > implementation('org.springframework.boot:spring-boot-starter-web')
+
+  * 머스테치는 **스프링 부트에서 공식 지원하는 템플릿 엔진**이다. 의존성 하나만 추가하면 다른 스타터 패키지와 마찬가지로 추가 설정 없이 설치가 끝난다.
+
+* 머스터치의 파일위치는 **src/main/resources/templates**이다. 이 위치에 머스테치 파일을 두면 스프링 부트에서 자동으로 로딩한다.
+
+* 첫 페이지를 담당할 **index.mustache**를 src/main/resources/templates에 생성한다.
+
+  ![templates](images/templates.PNG)
+
+  ```index.templates
+  <!DOCTYPE HTML>
+  <html>
+  <head>
+  	<title>스프링부트로 시작하는 웹 서비스><title>
+  	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  </head>
+  <body>
+  	<h1>스부링부트로 시작하는 웹 서비스 Ver.2</h1>
+  </body>
+  </html>
+  ```
+
+* 이 머스테치에 **URL을 매핑**한다. URL 매핑은 **Controller**에서 진행한다. web 패키지 안에 IndexController를 생성한다.
+
+  ![IndexController](images/indexController.PNG)
+
+  ```IndexController
+  import org.springframework.stereotype.Controller;
+  import org.springframework.web.bind.annotation.GetMapping;
+  
+  @Controller	// {1}
+  public class IndexController {
+  
+  	@GetMapping("/")
+  	public String index() {
+  		return "index";
+  	}
+  }
+  ```
+
+  * {1} **@Controller**
+
+    * 클래스 타입에 적용한다.
+    * @Controller 어노테이션을 붙이면 해당 클래스를 웹 요청을 처리하는 컨트롤러로 사용한다.
+
+  * 머스테치 스타터 덕분에 컨트롤러에서 문자열을 반환할 때 **앞의 경로와 뒤의 파일 확장자는 자동으로 지정**된다. 앞의 경로는 **src/main/resources/templates**로, 뒤의 파일 확장자는 **.mustache**가 붙는다. 여기서는 **"index"**을 반환하므로, src/main/resources/templates/**index.mustache**로 전환되어 **View Resolver**가 처리하게 된다.
+
+    > View Resolver는 URL 요청의 결과를 전달할 타입과 값을 지정하는 관리자 격으로 볼 수 있다.
+
+* 테스트 코드로 검증. test 패키지에 **IndexControllerTest** 클래스를 생성
+
+  ```IndexControllerTest 
+  import org.junit.jupiter.api.Test;
+  import org.junit.jupiter.api.extension.ExtendWith;
+  import org.springframework.beans.factory.annotation.Autowired;
+  import org.springframework.boot.test.context.SpringBootTest;
+  import org.springframework.boot.test.web.client.TestRestTemplate;
+  import org.springframework.test.context.junit.jupiter.SpringExtension;
+  import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
+  
+  import static org.assertj.core.api.Assertions.assertThat;
+  
+  @ExtendWith(SpringExtension.class)
+  @SpringBootTest(webEnvironment = RANDOM_PORT)
+  public class IndexControllerTeset {
+  
+      @Autowired
+      private TestRestTemplate restTemplate;
+  
+      @Test
+      public void 메인페이지_로딩() {
+          // when
+          String body = this.restTemplate.getForObject("/", String.class);
+  
+          //then
+          assertThat(body).contains("스부링부트로 시작하는 웹 서비스 Ver.2");
+      }
+  }
+  ```
+
