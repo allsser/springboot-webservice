@@ -43,7 +43,17 @@
    
 4. ### [머스테치로 화면 구성하기](#4-머스테치로-화면-구성하기)
 
+   4.1 서버 템플릿 엔진과 머스테치
 
+   4.2 기본 페이지 만들기
+
+   4.3 게시글 등록 화면 만들기
+
+   4.4 전체 조회 화면
+
+   4.5 게시글 수정, 삭제 화면
+
+5. 
 
 ---
 
@@ -1803,4 +1813,208 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
   ```
 
   * {1} **window.location.href = '/'**
+    
     * 글 등록이 성공하면 메인페이지( / )로 이동한다.
+    
+    
+    
+  * 생성된 index.js를 머스테치 파일이 쓸 수 있게 **footer.mustache**에 추가한다.
+  
+  **footer.mustache**
+  
+  ```footer.mustache
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  
+  <!--index.js 추가-->
+  <script src="/js/app/index.js"></script>
+  </body>
+  </html>
+  ```
+  
+  * index.js 호출 코드를 보면 **절대 경로( / )**로 바로 시작한다. 스프링 부트는 기본적으로 **src/main/resource/static**에 위치한 자바스크립트, CSS, 이미지 등 정적 파일들을 URL에서 /로 설정된다.
+  
+    
+  
+  * 등록 기능을 브라우저에서 직접 테스트 해보면 잘 작동하는 것을 확인할 수 있다. **localhost:8080/h2-console**에 접속하여 실제로 DB에 데이터가 등록되었는지 확인해 보면 잘 등록되어 있는 것도 확인할 수 있다.
+  
+    
+
+#### 4.4 전체 조회 화면
+
+* 전체 조회를 위해 index.mastache의 UI를 변경
+
+  ```index.mastache
+  {{>layout/header}}
+  
+      <h1>스프링부트로 시작하는 웹 서비스 Ver.2</h1>
+      <div class="col-md-12">
+          <div class="row">
+              <div class="col-md-6">
+                  <a href="/posts/save" role="button" class="btn btn-primary">글 등록</a>
+              </div>
+          </div>
+          <br>
+          <!-- 목록 출력 영역 -->
+          <table class="table table-horizontal table-bordered">
+              <thead class="thead-strong">
+              <tr>
+                  <th>게시글번호</th>
+                  <th>제목</th>
+                  <th>작성자</th>
+                  <th>최종수정일</th>
+              </tr>
+              </thead>
+              <tbody id="tbody">
+              {{#posts}}	// {1}
+                  <tr>
+                      <td>{{id}}</td>	// {2}
+                      <td>{{title}}</td>
+                      <td>{{author}}</td>
+                      <td>{{modifiedDate}}</td>
+                  </tr>
+              {{/posts}}
+              </tbody>
+          </table>
+      </div>
+  
+  {{>layout/footer}}
+  ```
+
+  * {1} **{{#posts}}**
+    * posts 라는 List를 순회한다.
+    * Java의 for문과 동일하게 생각하면 된다.
+  * {2} **{{id}} 등의 {{변수명}}**
+    * List에서 뽑아낸 객체의 필드를 사용한다. 
+
+
+
+* **Controller, Service, Repository** 코드를 작성한다.
+
+  * **Repository**부터 작성
+
+  **PostsRepository**
+
+  ```PostsRepository
+  import org.springframework.data.jpa.repository.JpaRepository;
+  import org.springframework.data.jpa.repository.Query;
+  
+  import java.util.List;
+  
+  public interface PostsRepository extends JpaRepository<Posts, Long> {
+  
+      @Query("SELECT p FROM Posts p ORDER BY p.id DESC")	// {1}
+      List<Posts> findAllDesc();
+  }
+  ```
+
+  * {1} **@Query**
+    * **SpringDataJpa**에서 제공하지 않는 메소드는 위처럼 쿼리로 작성해도 된다.
+    * 실제로 앞의 코드는 SpringDataJpa에서 제공하는 기본 메소드만으로 해결할 수 있지만, **@Query**가 훨씬 가독성이 좋으니 선택해서 사용하면 된다.
+
+
+
+* Repository 다음으로 **PostsService**에 코드를 추가한다.
+
+  * **PostsService**
+
+  ```PostsService
+  ...
+  import java.util.List;
+  import java.util.stream.Collectors;
+  
+  @RequiredArgsConstructor
+  @Service
+  public class PostsService {
+      private final PostsRepository postsRepository;
+  
+  	...
+  
+      @Transactional(readOnly = true)	// {1}
+      public List<PostsListResponseDto> findAllDesc() {
+          return postsRepository.findAllDesc().stream()
+                  .map(PostsListResponseDto::new)	// {2}
+                  .collect(Collectors.toList());
+      }
+  }
+  ```
+
+  * {1} **@Transactional(readOnly = true)**
+
+    * **findAllDesc** 메소드의 **@Transactional**에 옵션이 하나 추가되었다. **(readOnly = true)**를 주면 **트랜잭션 범위는 유지**하되, 조회 기능만 남겨두어 **조회 속도가 개선**되기 때문에 등록, 수정, 삭제 기능이 전혀 없는 서비스 메소드에서 사용하는 것을 추천한다.
+    * 트랜잭션이란 데이터베이스의 상태를 변경시키는 작업 또는 한번에 수행되어야 하는 연산들을 의미한다. 트랜잭션 작업이 끝나면 Commit 또는 Rollback 되어야 한다.
+
+  * {2} **.map(PostsListResponseDto::new)**
+
+    * 위의 코드는 실제로 다음과 같다.
+
+      > .map(posts -> new PostsListResponseDto(posts))
+
+    * postsRepository 결과로 넘어온 Posts의 Stream을 map을 통해 PostsListRepositoryDto 변환 -> List로 반환하는 메소드이다.
+
+    
+
+  * **PostsListResponseDto** 클래스 생성
+
+  **PostsListResponseDto**
+
+  ```PostsListResponseDto
+  import com.allsser.book.springboot.domain.posts.Posts;
+  import lombok.Getter;
+  
+  import java.time.LocalDateTime;
+  
+  @Getter
+  public class PostsListResponseDto {
+      private Long id;
+      private String title;
+      private String author;
+      private LocalDateTime modifiedDate;
+  
+      public PostsListResponseDto(Posts entity) {
+          this.id = entity.getId();
+          this.title = entity.getTitle();
+          this.author = entity.getAuthor();
+          this.modifiedDate = entity.getModifiedDate();
+      }
+  }
+  ```
+
+  
+
+  * **Controller**를 변경
+
+  **Index.controller**
+
+  ```Index.controller
+  import org.springframework.ui.Model;
+  
+  @RequiredArgsConstructor
+  @Controller
+  public class IndexController {
+  
+      private final PostsService postsService;
+  
+      @GetMapping("/")
+      public String index(Model model) {	// {1}
+          model.addAttribute("posts", postsService.findAllDesc());
+          return "index";
+      }
+  }
+  ```
+
+  * {1} **Model**
+
+    * 서버 템플릿 엔진에서 사용할 수 있는 객체를 저장할 수 있다.
+    * 여기서는 postsService.findAllDesc()로 가져온 결과를 posts로 index.mustache에 전달한다.
+
+    
+
+  * http://localhost:8080/로 접속한 뒤 등록 화면을 이용해 하나의 데이터를 등록해 보면 목록 기능이 정상적으로 작동하는 것을 확인할 수 있다.
+
+    ![조회목록](images/조회목록.PNG)
+
+
+
+#### 4.5 게시글 수정, 삭제 화면
+
