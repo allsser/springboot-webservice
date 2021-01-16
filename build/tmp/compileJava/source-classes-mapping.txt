@@ -3,8 +3,8 @@ com/allsser/book/springboot/domain/posts/PostsRepository.java
 com/allsser/book/springboot/web/dto/PostsSaveRequesrDto.java
  com.allsser.book.springboot.web.dto.PostsSaveRequesrDto
  com.allsser.book.springboot.web.dto.PostsSaveRequesrDto$PostsSaveRequesrDtoBuilder
-com/allsser/book/springboot/Application.java
- com.allsser.book.springboot.Application
+com/allsser/book/springboot/web/IndexController.java
+ com.allsser.book.springboot.web.IndexController
 com/allsser/book/springboot/web/dto/HelloResponseDto.java
  com.allsser.book.springboot.web.dto.HelloResponseDto
 com/allsser/book/springboot/web/dto/PostsUpdateRequestDto.java
@@ -25,5 +25,5 @@ com/allsser/book/springboot/service/posts/PostsService.java
  com.allsser.book.springboot.service.posts.PostsService
 com/allsser/book/springboot/web/PostsApiController.java
  com.allsser.book.springboot.web.PostsApiController
-com/allsser/book/springboot/web/IndexController.java
- com.allsser.book.springboot.web.IndexController
+com/allsser/book/springboot/Application.java
+ com.allsser.book.springboot.Application
