@@ -53,7 +53,7 @@
 
    4.5 [게시글 수정, 삭제 화면](#45-게시글-수정-삭제-화면)
 
-5. 
+5. ### [스프링 시큐리티와 OAuth 2.0으로 로그인 기능 구현]()
 
 ---
 
@@ -2018,3 +2018,323 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 #### 4.5 게시글 수정, 삭제 화면
 
+* 게시글 수정, 삭제 화면 만들기, 게시글 수정 API는 이미 3.4절에 만들어 두었다. 
+
+* **게시글 수정**
+
+  **PostsApiController**
+
+  ```PostsApiController
+  @RequiredArgsConstructor
+  @RestController
+  public class PostsApiController {
+  
+  	...
+      @PutMapping("/api/v1/posts/{id}")
+      public Long update(@PathVariable Long id, @RequestBody PostsUpdateRequestDto requestDto) {
+          return postsService.update(id, requestDto);
+      }
+      ...
+  
+  }
+  ```
+
+  * 해당 **API**로 요청하는 화면을 개발
+
+    
+
+  * **게시글 수정** 화면 머스테치 파일을 생성한다.
+
+  **posts-update.mustache**
+
+  ```posts-update.mustache
+  {{>layout/header}}
+  
+  <h1>게시글 수정</h1>
+  
+  <div class="col-md-12">
+      <div class="col-md-4">
+          <form>
+              <div class="form-group">
+                  <label for="id">글 번호</label>
+                  <input type="text" class="form-control" 
+                  	id="id" value="{{post.id}}" readonly>	// {1}
+              </div>
+              <div class="form-group">
+                  <label for="title">제목</label>
+                  <input type="text" class="form-control" 
+                  	id="title" value="{{post.title}}">
+              </div>
+              <div class="form-group">
+                  <label for="author"> 작성자 </label>
+                  <input type="text" class="form-control" 
+                  	id="author" value="{{post.author}}" readonly>	// {2}
+              </div>
+              <div class="form-group">
+                  <label for="content"> 내용 </label>
+                  <textarea class="form-control" id="content">{{post.content}}</textarea>
+              </div>
+          </form>
+          <a href="/" role="button" class="btn btn-secondary">취소</a>
+          <button type="button" class="btn btn-primary" id="btn-update">수정 완료</button>
+          <button type="button" class="btn btn-danger" id="btn-delete">삭제</button>
+      </div>
+  </div>
+  
+  {{>layout/footer}}
+  ```
+
+  * {1} **{{post.id}}**
+
+    * 머스테치는 객체의 필드 접근 시 점(Dot)으로 구분한다.
+    * 즉, Posts 클래스의 id에 대한 접근은 post.id로 사용할 수 있다.
+
+  * {2} **readonly**
+
+    * Input 태그에 읽기 기능만 허용하는 속성이다.
+    * id와 author는 수정할 수 없도록 읽기만 허용하도록 추가한다.
+
+    
+
+  * **btn-update** 버튼을  클릭하면 **update** 기능을 호출할 수 있게 **index.js** 파일에도 **update function**을 추가해 준다.
+
+  **index.js**
+
+  ```index.js
+  var main = {
+      init : function () {
+          var _this = this;
+          ...
+  
+          $('#btn-update').on('click', function () {	// {1}
+              _this.update();
+          })
+      },
+      save : function () {
+  		...
+      },
+      update : function () {	// {2}
+          var data = {
+              title: $('#title').val(),
+              content: $('#content').val()
+          };
+  
+          var id = $('#id').val();
+  
+          $.ajax({
+              type: 'PUT',	// {3}
+              url: '/api/v1/posts/'+id,	// {4}
+              dataType: 'json',
+              contentType: 'application/json; charset=utf-8',
+              data: JSON.stringify(data)
+          }).done(function() {
+              alert('글이 수정되었습니다.');
+              window.location.href = '/';
+          }).fail(function (error) {
+              alert(JSON.stringify(error));
+          });
+      }
+  };
+  
+  main.init();
+  ```
+
+  * {1} **$('btn-update').on('click')**
+
+    * btn-update란 id를 가진 HTML 엘리먼트에 click 이벤트가 발생할 때 update function을 실행하도록 이벤트를 등록한다.
+
+  * {2} **update : function () **
+
+    * 신규로 추가될 update function이다.
+
+  * {3} **type: 'PUT'**
+
+    * 여러 HTML Method 중 PUT 메소드를 선택한다.
+
+    * PostsApiController에 있는 API에서 이미 @PutMapping으로 선언했기 때문에 PUT을 사용해야 한다. 참고로 이는 REST 규약에 맞게 설정된 것이다.
+
+    * REST에서 CRUD는 다음과 같이 HTML Method에 매핑된다.
+
+      생성 (Create) - POST
+
+      일기(Read) - GET
+
+      수정(Update) - PUT
+
+      삭제(Delete) - DELETE
+
+  * {4} **url: '/api/v1/posts/'+id**
+
+    * 어느 게시글을 수정할지 URL Path로 수분하기 위해 Path에 id를 추가한다.
+
+    
+
+  * 전체 목록에서 **수정 페이지로 이동할 수  있게** 페이지 이동 기능을 추가한다. index.mustache 코드를 조금 수정해 준다.
+
+  **index.mustache**
+
+  ```index.mustache
+  <tbody id="tbody">
+  	{{#posts}}
+  		<tr>
+             <td>{{id}}</td>
+             <td><a href="/posts/update/{{id}}">{{title}}</a></td>	// {1}
+             <td>{{author}}</td>
+             <td>{{modifiedDate}}</td>
+           </tr>
+      {{/posts}}
+  </tbody>
+  ```
+
+  * {1} **<a href="/posts/update/{{id}}"></a>**
+
+    * 타이틀(title)에 a tag를 추가한다.
+    * 타이틀을 클릭하면 해당 게시글의 수정 화면으로 이동한다.
+
+    
+
+  * 수정 화면을 연결할 Controller 코드를 작업한다. IndexController에 다음과 같이 메소드를 추가한다.
+
+  **IndexController**
+
+  ```IndexController
+  public class IndexController {
+  	...
+  	
+      @GetMapping("/posts/update/{id}")
+      public String postsUpdate(@PathVariable Long id, Model model) {
+          PostsResponseDto dto = postsService.findById(id);
+          model.addAttribute("post", dto);
+  
+          return "posts-update";
+      }
+  }
+  ```
+
+  * 코드를 실행해 보면 타이틀 링크를 클릭할 수 있고, 링크를 클릭하면 수정 페이지로 이동하여 제목과 내용을 수정할 수 있다.
+
+
+
+* **게시글 삭제**
+
+  * 삭제 기능을 구현하기 위해서 삭제 버튼을 수정 화면에 추가한다.
+
+  **posts-update.mustache**
+
+  ```posts-update.mustache
+  ...
+  <div class="col-md-12">
+      <div class="col-md-4">
+  		...
+          <a href="/" role="button" class="btn btn-secondary">취소</a>
+          <button type="button" class="btn btn-primary" 
+          	id="btn-update">수정 완료</button>
+          <button type="button" class="btn btn-danger" 
+          	id="btn-delete">삭제</button>	//	{1}
+      </div>
+  </div>
+  ...
+  ```
+
+  * {1} **btn-delete**
+
+    * 삭제 버튼을 수정 완료 버튼 옆에 추가한다.
+    * 해당 버튼 클릭 시 JS에서 이벤트를 수신할 예정이다.
+
+    
+
+  * 삭제 이벤트를 진행할 JS 코드도 추가해 준다.
+
+  **index.js**
+
+  ```index.js
+  var main = {
+      init : function () {
+      	...
+  
+          $('#btn-delete').on('click', function () {
+              _this.delete();
+          })
+      },
+      ...
+      delete : function () {
+          var id = $('#id').val();
+  
+          $.ajax({
+              type: 'DELETE',
+              url: '/api/v1/posts/'+id,
+              dataType: 'json',
+              contentType: 'application/json; charset=utf-8'
+          }).done(function() {
+              alert('글이 삭제되었습니다.');
+              window.location.href = '/';
+          }).fail(function (error) {
+              alert(JSON.stringify(error));
+          });
+      }
+  };
+  
+  main.init();
+  ```
+
+  * type은 **'DELETE'**를 제외하고는 update function과 크게 차이 나진 않는다.
+
+    
+
+  * 삭제 API를 개발, 먼저 서비스 메소드부터 시작
+
+  **PostsService**
+
+  ```PostsService
+  ...
+  public class PostsService {
+  	...
+  
+      @Transactional
+      public void delete (Long id) {
+          Posts posts = postsRepository.findById(id).orElseThrow(() ->
+                  new IllegalArgumentException("해당 게시글이 없습니다. id=" + id));
+  
+          postsRepository.delete(posts);	//	{1}
+      }
+  }
+  ```
+
+  * {1} **postsRepository.delete(posts)**
+
+    * JpaRepository에서 이미 delete 메소드를 지원하고 있으니 이를 활용한다.
+    * 엔티티 파라미터로 삭제할 수도 있고, deleteById 메소드를 이용하면 id로 삭제할 수도 있다.
+    * 존재하는 Posts인지 확인을 위해 엔티티 조회 후 그대로 삭제한다.
+
+    
+
+  * 서비스에서 만든 delete 메소드를 컨트롤러가 사용하도록 코드를 추가한다.
+
+  **PostsApiController**
+
+  ```PostsApiController
+  ...
+  public class PostsApiController {
+  	...
+  	
+      @DeleteMapping("/api/v1/posts/{id}")
+      public Long delete(@PathVariable Long id) {
+          postsService.delete(id);
+          return id;
+      }
+  }
+  ```
+
+  * 컨트롤러까지 생성하여 게시글의 수정 화면에서 삭제 버튼을 클릭하면 삭제 성공 메시지를 확인할 수 있다.
+
+  ![deleteButton](images/deleteButton.PNG)
+
+  ![deleteButtonClick](images/deleteButtonClick.PNG)
+
+**수정/삭제 기능까지 완성되었다.**
+
+
+
+---
+
+### 5. 스프링 시큐리티와 OAuth 2.0으로 로그인 기능 구현
