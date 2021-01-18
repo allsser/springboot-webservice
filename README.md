@@ -2356,3 +2356,109 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
   * 회원가입 시 이메일 혹은 전화번호 인증
 * OAuth 로그인 구현 시 앞선 목록 것들을 모두 구글, 페이스북, 네이버 등에 맡기면 되니 서비스 개발에 집중할 수 있다.
 
+**스프링 부트 2방식**
+
+* 스프링 부트 2 방식의 자료를 찾고 싶을 경우 인터넷 자료들 사이에서 다음 두 가지만 확인하면된다.
+
+  * **spring-security-oauth2-autoconfigure 라이브러리**를 썻는지 확인
+
+  * **application.properties** 혹은 **application.yml 정보**가 다음과 같이 차이가 있는지 비교
+
+    * Spring Boot 1.5
+
+    ```Spring Boot 1.5
+    google :
+    	client :
+    		clientId : 인증정보
+    		clientSectret: 인증정보
+    		accessTokenUri: https://accounts.google.com/o/oauth2/token
+    		userAuthorizationUri: https://accounts.google.com/o/oauth2/auth
+    		clientAuthenticationScheme: form
+    		scope: email, profile
+    	resource:
+    		userInfoUri: https://www.googleapis.com/oauth2/v2/userinfo
+    ```
+
+    * Spring Boot 2.x
+
+    ```Spring Boot 2.x
+    spring:
+    	security:
+    		oauth2:
+    			client:
+    				clientId: 인증정보
+    				clientSecret: 인정정보
+    ```
+
+  * 스프링 부트 1.5 방식에서는 url 주소를 모두 명시해야 하지만, **2.0 방식 에서는 client 인증 정보**만 입력하면 된다. 1.5버전에서 직접 입력했던 값들은 2.0버전으로 오면서 모두 **enum으로 대체되었다.**
+
+  * **CommonOAuth2Provider**라는 enum이 새롭게 추가되어 구글, 깃허브, 페이스북, 옥타의 기본 설정값은 모두 여기에서 제공한다.
+
+  ```CommonOAuth2Provider
+  public enum CommonOAuth2Provider {
+  	GOOGLE {
+  		
+  		@Override
+  		public Builder getBuilder(String registrationId) {
+  			ClientRegistration.Builder builder =
+  				getBuilder(registrationId, ClientAuthenticationMethod.BASIC,
+  					DEFAULT_REDIRECT_URL);
+  					
+  			builder.scope("openid", "progile", "email");
+  			builder.authorizationUri("https://accounts.google.com/o/oauth2/v2/auth");
+  			builder.tokenUri("https://www.googleapis.com/oauth2/v4/token");
+  			builder.jwkSetUri("https://www.googleapis.com/oauth2/v3/certs");
+  			builder.userInfoUri("https://www.googleapis.con/oauth2/v3/userinfo");
+  			builder.userNameAttributeName(IdTokenClaimNames.SUB);
+  			builder.clientName("Google");
+  			return builder;
+  		}
+  	},
+  	
+  	...
+  }
+  ```
+
+  * 이외에 다른 소셜 로그인(네이버, 카카오 등)을 추가한다면 직접 다 추가해 주어야 한다.
+
+
+
+#### 5.2 구글 서비스 등록
+
+* 구글 서비스에 신규 서비스를 생성한다. 여기서 발급된 인증 정보(clientId와 clientSecret)를 통해서 로그인 기능과 소셜 서비스 기능을 사용할 수 있으니 무조건 발급받고 시작해야 한다.
+
+  * 구글 클라우드 플랫폼 주소(https://console.cloud.google.com)으로 이동하여 [프로젝트 선택] 탭을 클릭하여 새 프로젝트를 선택 및 등록될 서비스의 이름을 입력하면 된다.
+
+  ![newGoogle](images/newGoogle.PNG)
+
+  
+
+  * 생성이 완료된 프로젝트를 선택하고 왼쪽 메뉴 탭을 클릭하여 **API 및 서비스** 카테고리로 이동한다. 사이드바 중간에 있는 **[사용자 인증 정보]**를 클릭하고 **[사용자 인증 정보 만들기]** 버튼을 클릭한다. 
+  * 사용자 인증 정보에는 여러 메뉴가 있는데 이 중 이번에 구현할 소셜 로그인 OAuth 클라이언트 ID로 구현한다. **[OAuth 클라이언트 ID]** 항목을 클릭한다.
+
+  ![googleID](images/googleID.PNG)
+
+  
+
+  * **OAuth 동의 화면** 탭에서 동의 화면 구성을 끝낸 후 **OAuth 클라이언트 ID 만들기** 화면으로 이동하여 애플리케이션 유형을 **웹 애플리케이션**으로 선택하고 **승인된 리디렉션 URI**의 URI에 **http://localhost:8080/login/oauth2/code/google**을 입력해 준다.
+
+  ![OAuthID만들기](images/OAuthID만들기.PNG)
+
+  * 승인된 리디렉션 URI
+
+    * 서비스에서 파라미터로 인증 정보를 주었을 때 성공하면 구글에서 리다이렉트할 URL이다.
+    * 스프링 부트 2 버전의 시큐리티에서는 기본적으로 **{도메인}/login/oauth2/code/{소셜 서비스코드}**로 리다이렉트 URL을 지원하고 있다.
+    * 사용자가 별도로 리다이렉트 URL을 지원하는 Controller를 만들 필요가 없다. 시큐리티에서 이미 구현해 놓았다.
+    * 현재는 개발 단계이므로 http://localhost:8080/login/oauth2/code/google로만 등록한다.
+    * AWS 서버에 배포하게 되면 localhost 외에 추가로 주소를 추가해야하며, 이후 단계에서 진행한다.
+
+    
+
+  * 생성된 OAuth 클라이언트에서 **클라이언트 ID**와 **클라이언트 보안 비밀** 코드를 프로젝트에서 설정한다.
+
+  ![보안코드](images/보안코드.PNG)
+
+
+
+* **application-oauth 등록**
+  * 4장에서 만들었던 application.properties가 있는 src/main/resources/ 디렉토리에 **application-oauth.properties** 파일을 생성한다.
