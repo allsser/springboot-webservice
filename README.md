@@ -55,6 +55,12 @@
 
 5. ### [스프링 시큐리티와 OAuth 2.0으로 로그인 기능 구현](#5-스프링-시큐리티와-oauth-20으로-로그인-기능-구현)
 
+   5.1 [스프링 시큐리티와 스프링 시큐리티 Oauth2 클라이언트](#51-스프링-시큐리티와-스프링-시큐리티-oauth2-클라이언트)
+
+   5.2 [구글 서비스 등록](#52-구글-서비스-등록)
+
+   5.3 [구글 로그인 연동](#53-구글-로그인-연동)
+
 ---
 
 ### 1. Intellij Springboot start
@@ -2670,7 +2676,8 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
                   .and()
                       .authorizeRequests()	//	{3}
                       .antMatchers("/", "/css/**", "/images/**",	
-                      				"/js/**", "/h2-console/**").permitAll()
+                      				"/js/**", "/h2-console/**", 
+                      				"/profile").permitAll()
                       .antMatchers("/api/v1/**").hasRole(Role.USER.name())	//	{4}
                       .anyRequest().authenticated()	//	{5}
                   .and()
