@@ -39,6 +39,9 @@ dependencies {
     // 권한 관련
     implementation('org.springframework.boot:spring-boot-starter-oauth2-client')
 
+    // spring-session-jdbc 등록
+    implementation('org.springframework.session:spring-session-jdbc')
+
     implementation("org.mariadb.jdbc:mariadb-java-client")
 
     testImplementation('org.springframework.boot:spring-boot-starter-test')
