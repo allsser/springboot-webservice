@@ -60,6 +60,14 @@
    5.2 [구글 서비스 등록](#52-구글-서비스-등록)
 
    5.3 [구글 로그인 연동](#53-구글-로그인-연동)
+   
+   5.4 [어노테이션 기반으로 개선]()
+   
+   5.5 [세션 저장소로 데이터베이스 사용]()
+   
+   5.6 [네이버 로그인]()
+   
+   5.7 [기존 테스트에 시큐리티 적용]
 
 ---
 
@@ -2962,18 +2970,18 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
                   <a href="/posts/save" role="button" class="btn btn-primary">
                   	글 등록
                   </a>
-                  {{#userName}}	//	{1}
-                      Logged in as: <span id="user">{{userName}}</span>
+                  {{#nameUser}}	//	{1}
+                      Logged in as: <span id="user">{{nameUser}}</span>
                       <a href="/logout" class="btn btn-info active" role="button">
                       	Logout
                       </a>	//	{2}
-                  {{/userName}}
-                  {{^userName}}	//	{3}
+                  {{/nameUser}}
+                  {{^nameUser}}	//	{3}
                       <a href="/oauth2/authorization/google"	//	{4}
                       			class="btn btn-success active" role="button">
                           Google Login
                       </a>
-                  {{/userName}}
+                  {{/nameUser}}
               </div>
           </div>
           <br>
@@ -3019,7 +3027,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
           SessionUser user = (SessionUser) httpSession.getAttribute("user");	//	{1}
           
           if (user != null) {	// {2}
-              model.addAttribute("userName", user.getName());
+              model.addAttribute("nameUser", user.getName());	//	{3}
           }
           
           return "index";
@@ -3037,10 +3045,646 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     * 세션에 저장된 값이 있을 때만 model에 userName으로 등록한다.
     * 세션에 저장된 값이 없으면 model엔 아무런 값이 없는 상태이니 로그인 버튼이 보이게 된다.
 
+  * {3} **model.addAttribute("nameUser", user.getName())**
+
+    * 책에서는 "nameUser"가 아닌 "userName"으로 적혀있다. 책대로 진행하니 구글 로그인 시 사용자 이름을 출력하는 것이 아닌 프로젝트를 실행하고 있는 로컬 컴퓨터 로그인 이름이 뜬다.
+  * 변수가 "UserName"이나 "Username"과 같이 대소문자 구별없는 "username"문자열이면 이런 이슈가 발생하는거 같다.  윈도우의 환경변수 이슈 때문에 발생한 오류이다.(맥OS는 상관없다.)
+    * userName이 아닌 임의로 정해준 nameUser를 입력했더니 구글 로그인 시 사용자 이름을 정상적으로 출력했다.
+
+    
+  
+  * 프로젝트를 실행시키면 **Google Login 버튼**이 생성되었다.
+  
+  ![googleLoginButton](images/googleLoginButton.PNG)
+  
+  * 클릭해 보면 다른 서비스에서 볼 수 있던 것처럼 구글 로그인 화면으로 이동한다.
+  
+    
+  
+  * 회원 가입이 잘 되어 있는지 확인해 보기 위해 **http://localhost:8080/h2-console**에 접속해서 **user** 테이블을 확인해 보면 데이터베이스에 정상적으로 회원정보가 들어간 것을 확인할 수 있다.
+  
+  ![userTable](images/userTable.PNG)
+  
+  * 현재 사용자의 권한은**GUEST**이다. 이 상태에서는 posts 기능을 전혀 쓸 수 없다. 실제로 글을 등록해 보면 **403(권한 거부)** 에러가 발생하는 것을 볼 수 있다.
+  
+  ![403에러](images/403에러.PNG)
+  
+  * h2-console로 가서 권한을 변경하기 위해 사용자의 role를 **USER**로 변경한다.
+  
+    > update user set role = 'USER';
+  
+  ![권한변경](images/권한병경.PNG)
+  
+  * 세션에는 이미 **GUEST**인 정보로 저장되어있으니 로그아웃을한 후 다시 로그인 하여 세션 정보를 최신 정보로 갱신한 후에 글을 등록해 보면 정상적으로 글이 등록되는 것을 확인할 수 있다.
+
+
+
+#### 5.4 어노테이션 기반으로 개선
+
+* 일반적으로 프로그래밍에서 개선이 필요한 나쁜 코드에는 어떤 것이 있을까?
+
+  * 가장 대표적으로 **같은 코드가 반복**되는 부분이다. 같은 코드를 계속해서 복사&붙여넣기로 반복하게 만든다면 이후에 수정이 필요할 때 모든 부분을 하나씩 찾아가며 수정해야 한다. 이렇게 될 경우 유지보수성이 떨어지며, 혹시나 수정이 반영되지 않은 반복 코드가 있다면 문제가 발생할 수밖에 없다.
+
+  * 앞서 만든 코드에서 개선할만한 것은 IndexController에서 **세션값을 가져오는 부분**이 있다.
+
+    > SessionUser user = (SessionUser) httpSession.getAttribute("user");
+
+  * index 메소드 외에 다른 컨트롤러와 메소드에서 세션값이 필요하면 그때마다 직접 세션 값을 가져와야 한다. 같은 코드가 계속해서 반복되는 것은 불필요하다. 그래서 이 부분을 **메소드 인자로 세션값을 바로 받을 수 있도록** 변경한다.
+
+  * config.auth 패키지에 **@LoginUser** 어노테이션을 생성한다.
+
+  **LoginUser**
+
+  ```LoginUser
+  import java.lang.annotation.ElementType;
+  import java.lang.annotation.Retention;
+  import java.lang.annotation.RetentionPolicy;
+  import java.lang.annotation.Target;
+  
+  @Target(ElementType.PARAMETER)	//	{1}
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface LoginUser {	//	{2}
+  }
+  ```
+
+  * {1} **@Target(ElementType.PARAMTER)**
+
+    * 이 어노테이션이 생성될 수 있는 위치를 지정한다.
+    * PARAMTER로 지정했으니 메소드의 파라미터로 선언된 객체에서만 사용할 수 있다.
+    * 이 외에도 클래스 선언문에 쓸  수 있는 TYPE 등이 있다.
+
+  * {2} **@interface**
+
+    * 이 파일을 어노테이션 클래스로 지정한다.
+    * LoginUser라는 이름을 가진 어노테이션이 생성되었다고 보면 된다.
+
     
 
-  * 프로젝트를 실행시키면 **Google Login 버튼**이 생성되었다.
+  * 같은 위치에 **LoginUserArgumentResolver**를 생성한다. **LoginUserArgumentResolver**라는 **HandlerMethodArgumentResolver** 인터페이스를 구현한 클래스이다.
 
-  ![googleLoginButton](images/googleLoginButton.PNG)
+  * **HandlerMethodArgumentResolver** 는 한가지 기능을 지원한다. 바로 조건에 맞는 경우 메소드가 있다면 **HandlerMethodArgumentResolver**의 구현체가 지정한 값으로 해당 메소드의 파라미터로 넘길 수 있다.
 
-  * 클릭해 보면 다른 서비스에서 볼 수 있던 것처럼 구글 로그인 화면으로 이동한다.
+  **LoginUserArgumentResolver**
+
+  ```LoginUserArgumentResolver
+  import lombok.RequiredArgsConstructor;
+  import org.springframework.core.MethodParameter;
+  import org.springframework.stereotype.Component;
+  import org.springframework.web.bind.support.WebDataBinderFactory;
+  import org.springframework.web.context.request.NativeWebRequest;
+  import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+  import org.springframework.web.method.support.ModelAndViewContainer;
+  
+  import javax.servlet.http.HttpSession;
+  
+  @RequiredArgsConstructor
+  @Component
+  public class LoginUserArgumentResolver implements HandlerMethodArgumentResolver{
+  
+      private final HttpSession httpSession;
+  
+      @Override
+      public boolean supportsParameter(MethodParameter parameter) {	//	{1}
+      
+          boolean isLoginUserAnnotation = 
+          	parameter.getParameterAnnotation(LoginUser.class) != null;
+          	
+          boolean isUserClass = 
+          	SessionUser.class.equals(parameter.getParameterType());
+  
+          return isLoginUserAnnotation && isUserClass;
+      }
+  
+      @Override
+      public Object resolveArgument(MethodParameter parameter,	// {2}
+      	ModelAndViewContainer mavContainer,NativeWebRequest webRequest, 
+          WebDataBinderFactory binderFactory) throws Exception {
+          
+          return httpSession.getAttribute("user");
+      }
+  }
+  ```
+
+  * {1} **supportsParameter( )**
+
+    * 컨트롤러 메서드의 특정 파라미터를 지원하는지 판단한다.
+    * 여기서는 파라미터에 @LoginUser 어노테이션이 붙어 있고, 파라미터 클래스 타입이 SesscionUser.class인 경우 true를 반환한다.
+
+  * {2} **resolveArgument( )**
+
+    * 파라미터에 전달할 객체를 생성한다.
+    * 여기서는 세션에서 객체를 가져온다.
+
+  * **@LoginUser**를 사용하기 위한 환경은 구성되었다
+
+    
+
+  * 이렇게 생성된 LoginUserArgumentResolver가 **스프링에서 인식될 수 있도록** WebMvcConfigurer에 추가해준다.
+
+  * config 패키지에 WebConfig 클래스를 생성하여 다음과 같이 설정을 추가해준다.
+
+  **WebConfig**
+
+  ```WebConfig
+  import lombok.RequiredArgsConstructor;
+  import org.springframework.context.annotation.Configuration;
+  import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+  import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+  
+  import java.util.List;
+  
+  @RequiredArgsConstructor
+  @Configuration
+  public class WebConfig implements WebMvcConfigurer {
+      private final LoginUserArgumentResolver loginUserArgumentResolver;
+  
+      @Override
+      public void addArgumentResolvers(List<HandlerMethodArgumentResolver> argumentResolvers) {
+          argumentResolvers.add(loginUserArgumentResolver);
+      }
+  }
+  ```
+
+  * **HandlerMethodArgumentResolver**는 항상 **WebMvcConfigurer**의 **addArgumentResolvers( )**를 통해 추가해야 한다.
+
+  * 다른 HandlerMethodArgumentResolver가 필요하다면 같은 방식으로 추가해 주면 된다.
+
+    
+
+  * 모든 설정이 끝났으니 **IndexController**의 코드에서 반복되는 부분들을 묻 **@LoginUser**로 개선한다.
+
+  **IndexController**
+
+  ```IndexController
+  ...
+  @RequiredArgsConstructor
+  @Controller
+  public class IndexController {
+  
+      private final PostsService postsService;
+      private final HttpSession httpSession;
+  
+      @GetMapping("/")
+      public String index(Model model, @LoginUser SessionUser user) {	//	{1}
+          model.addAttribute("posts", postsService.findAllDesc());
+     
+          if (user != null) {
+              model.addAttribute("nameUser", user.getName());
+          }
+          return "index";
+      }
+  ```
+
+  * {1} **@LoginUser SessionUser user**
+    * 기존에 (User) httpSession.getAttribute("user")로 가져오던 세션 정보 값이 개선되었다.
+    * 이제는 어느 컨트롤러든지 @LoginUser만 사용해서 세션 정보를 가져올 수 있다.
+
+
+
+#### 5.5 세션 저장소로 데이터베이스 사용
+
+* 추가로 개선. 현재 프로젝트의 서비스는 **애플리케이션을 재실행**하면 로그인이 풀린다.
+  * 이유는 세션이 **내장 톰캣의 메모리에 저장**되기 때문이다. 기본적으로 세션은 실행되는 **WAS(Web Application Server)**의 메모리에서 저장되고 호출된다. 메모리에 저장되다 보니 **내장 톰캣처럼 애플리케이션 실행 시 실행되는 구조에선 항상 초기화**된다. 즉, **배포할 때마다 톰캣이 재시작**되는 것이다.
+  * 이 외에도 한 가지 문제가 더 있다. 2대 이상의 서버에서 서비스하고 있다면 **톰캣마다 세션 동기화** 설정을 해야만 한다. 그래서 실제 현업에서는 세션 저장소에 대해 다음의 3가지 중 한가지를 선택한다.
+    * (1) 톰캣 세션을  사용한다.
+      * 일반적으로 별다른 설정을 하지 않을 때 기본적으로 선택되는 방식이다.
+      * 이렇게 될 경우 톰캣(WAS)에 세션이 저장되기 때문에 2대 이상의 WAS가 구동되는 환경에서는 톰캣들 간의 세션 공유를 위한 추가 설정이 필요하다.
+    * (2) MySQL과 같은 데이터베이스를 세션 저장소로 사용한다.
+      * 여러 WAS 간의 공용 세션을 사용할 수 있는 가장 쉬운 방법이다.
+      * 많은 설정이 필요 없지만, 결국 로그인 요청마다 DB IO가 발생하여 성능상 이슈가 발생할 수 있다.
+      * 보통 로그인 요청이 많이 없는 백오피스, 사내 시스템 용도에서 사용한다.
+    * (3) Redis, Memcached와 같은 메모리 DB를 세션 저장소로 사용한다.
+      * B2C 서비스에서 가장 많이 사용하는 방식이다.
+      * 실제 서비로 사용하기 위해서는 Embedded Redis와 같은 방식이 아닌 외부 메모리 서버가 필요하다.
+  * 이 프로젝트에서는 두 번째 방식인 **데이터베이스를 세션 저장소**로 사용하는 방식을 선택하여 진행한다.
+  * 선택한 이유는 **설정이 간단**하고 사용자가 많은 서비스가 아니며 비용 절감을 위해서이다.
+  * 이후 AWS에서 이 서비스를 배포하고 운영할 때를 생각하면 레디스와 같은 메모리 DB를 사용하기는 부담그럽다. 왜냐하면, 레디스와 같은 서비스(엘라스틱 캐시)에 별도로 사용료를 지불해야 하기 때문이다.
+  * 사용자가 없는 현재 단계에서는 데이터베이스로 모든 기능을 처리하는게 부담이 적다.
+
+
+
+* **spring-session-jdbc 등록**
+
+  * build.gradle에 의존성을 등록한다. spring-session-jdbc 역시 현재 상태에선 바로 사용할 수 없다. spring web, spring jpa를 사용했던 것과 마찬가지로 의존성이 추가되어 있어야 사용할 수 있다.
+
+    > implementation('org.springframework.session:spring-session-jdbc')
+
+  * 그리고 **application.properties**에 세션 저장소를 **jdbc**로 선택하도록 코드를 추가한다. 이 외에 설정할 것은 없다.
+
+    > spring.session.store-type=jdbc
+
+    
+
+  * 모두 변경하였으니 다시 애플리케이션을 실행해서 로그인 테스트한 뒤, **h2-console**로 접속한다.
+  * h2-console을 보면 세션을 위한 테이블 2개**(SPRING_SESSION, SPRING_SESSION_ATTRIBUTES)**가 생성된 것을 볼 수 있다. **JPA로 인해 세션 테이블이 자동 생성**되었기 때문에 별도로 해야 할 일은 없다.
+  * 로그인했기 때문에 한 개의 세션이 등록돼있는 것을 볼 수 있다.
+
+  ![세션](images/세션.PNG)
+
+  * 세션 저장소를 데이터베이스로 교체했다. 
+  * 현재는 기존과 동일하게 **스프링을 재시작하면 세션이 풀린다.** 이유는 H2 기반으로 스프링이 재실행될 때 **H2도 재시작되기 때문**이다.
+  * 이후 **AWS**로 배포하게 되면 AWS의 데이터베이스 서비스인 **RDS(Relational Database Service)**를 사용하게 되니 이때부터는 세션이 풀리지 않는다.
+
+
+
+#### 5.6 네이버 로그인
+
+* **네이버 API 등록**
+
+  * 네이버 오픈 API로 이동한다.
+
+  > https://developers.naver.com/apps/#/register?api=nvlogin
+
+  * 다음과 같이 항목을 채워준다.
+
+  ![naverservice1](images/naverservice1.PNG)
+
+  * 회원이름, 이메일, 프로필 사진은 필수이며 추가 정보는 필요한 경우 선택할 수 있다.
+
+  ![naverservice2](images/naverservice2.PNG)
+
+  * 구글과 마찬가지로 URL을 등록한다.
+
+  * 서비스 URL은 필수이다. 여기서는 **localhost:8080** 으로 등록한다.
+
+  * **Callback URL**은 구글에서 등록한 리디렉션 URL과 같은 역할을 한다. 여기서는 **/login/oauth2/code/naver**로 등록한다.
+
+  * 등록을 완료하면 **ClientID**와 **ClientSecret**가 생성된다.
+
+    
+
+  * 해당 키값들을 **application-oauth.properties**에 등록한다. 네이버에서는 스프링 시큐리티를 공식 지원하지 않기 때문에 그동안 **Common-OAuth2Provider**에서 해주던 값들도 전부 수동으로 입력해야 한다.
+
+  **applicaiton-oauth.properties**
+
+  ```applicaiton-oauth.properties
+  # registration
+  spring.security.oauth2.client.registration.naver.client-id=5Ns1c8UVpWwRucnjRrNa
+  spring.security.oauth2.client.registration.naver.client-secret=MmXjZjttga
+  spring.security.oauth2.client.registration.naver.redirect-uri={baseUrl}/{action}/oauth2/code/{registrationId}
+  spring.security.oauth2.client.registration.naver.authoriztion_grant_type=authorization_code
+  spring.security.oauth2.client.registration.naver.scope=name, email, profile_image
+  spring.security.oauth2.client.registration.naver.client-name=Naver
+  
+  # provider
+  spring.security.oauth2.client.provider.naver.authorization_url=https://nid.naver.com/oauth2.0/authorize
+  spring.security.oauth2.client.provider.naver.token_uri=https://nid.naver.com/oauth2.0/token
+  spring.security.oauth2.client.provider.naver.user-info-uri=https://openapi.naver.com/v1/nid/me
+  spring.security.oauth2.client.provider.naver.user_name_attribute=response	//	{1}
+  ```
+
+  * {1} **user_name_attribute=response**
+    * 기준이 되는 user_name의 이름을 네이버에서는 response로 해야한다.
+    * 이유는 네이버의 회원 조회 시 반환되는 JSON 형태 때문이다.
+  * 스프링 시큐리티에선 **하위 필드를 명시할 수 없다.** 최상위 필드들만 **user_name**으로 지정 가능하다. 하지만 네이버의 응답값 최상위 필드는 **resultCode, message, response**이다.
+  * 이러한 이유로 스프링 시큐리티에서 인식 가능한 필드는 저 3개 중에 골라야 한다. 본문에서 담고 있는 response를 user_name으로 지정하고 이후 **자바 코드로 response의 id를 user_name**으로 지정하겠다.
+
+
+
+* **스프링 스큐리티 설정 등록**
+
+  * 구글 로그인을 등록하면서 대부분 코드가 확장성 있게 작성되었다 보니 네이버는 쉽게 등록 가능하다. **OAuthAttributes**에 다음과 같이 **네이버인지 판단하는 코드와 네이버 생성자**만 추가해 주면 된다.
+
+  **OAuthAttributes**
+
+  ```OAuthAtrributes
+  @Getter
+  public class OAuthAttributes {
+  	...
+  
+      public static OAuthAttributes of(String registrationId,
+                                       String userNameAttributeName,
+                                       Map<String, Object> attributes) {
+          if("naver".equals(registrationId)){
+              return ofNaver("id", attributes);
+          }
+          return ofGoogle(userNameAttributeName, attributes);
+      }
+      
+      ...
+      
+      private static OAuthAttributes ofNaver(String userNameAttributeName,
+                                             Map<String, Object> attributes) {
+          Map<String, Object> response = 
+          		(Map<String, Object>) attributes.get("response");
+          
+          return OAuthAttributes.builder()
+                  .name((String) response.get("name"))
+                  .email((String) response.get("email"))
+                  .picture((String) response.get("profile_image"))
+                  .attributes(response)
+                  .nameAttributeKey(userNameAttributeName)
+                  .build();
+      }
+  	...
+  }
+  ```
+
+  
+
+  * **index.mustache**에 네이버 로그인 버튼을 추가한다.
+
+  **index.mustache**
+
+  ```index.mustache
+  ... 
+     ...        
+          {{^nameUser}}
+              <a href="/oauth2/authorization/google" 
+              			class="btn btn-success active" role="button">
+                  Google Login
+              </a>
+          
+              <a href="/oauth2/authorization/naver" 
+              			class="btn btn-secondary active" role="button">
+                  Naver Login
+              </a>	//	{1}
+          {{/nameUser}}
+      </div>
+  </div>
+  ...
+  ```
+
+  * {1} **/oauth2/authorization/naver**
+    * 네이버 로그인 URL은 application-oauth.properties에 등록한 redirect-uri 값에 맞춰 자동으로 등록된다.
+    * **/oauth2/authorization/** 까지는 고정이고 마지막 Path만 각 소셜 로그인 코드를 사용하면 된다.
+    * 여기서는 naver가 마지막 Path가 된다.
+    
+    
+    
+  * 메인 화면을 확인해 보면 네이버 버튼이 활성화된 것을 볼 수 있다. 네이버 로그인 버튼을 클릭하면 동의 화면이 등장하고 동의를 하면 로그인이 성공적으로 되는 것을 확인할 수 있다.
+  
+  ![naverLogin](images/naverLogin.PNG)
+
+
+
+#### 5.7 기존 테스트에 시큐리티 적용
+
+* **기존 테스트에 시큐리티 적용으로 문제가 되는 부분**들을 해결한다.
+
+* 문제가 되는 부분들은 대표적으로 다음과 같은 이유이다.
+
+  * 기존에는 **API**를 호출할 수 있어 테스트 코드 역시 바로 API를 호출하도록 구성하였다. 하지만, 시큐리티 옵션이 활성화되면 인증된 사용자만 API를 호출할 수 있다.
+  * 기존의 API 테스트 코드들이 모두 인증에 대한 권한을 받지 못하였스므로, 테스트 코드마다 인증한 사용자가 호출한 것처럼 작동하도록 수정한다.
+  * 인텔리제이 오른쪽 위에 **[Gradle]** 탭을 클릭한다. **[Tasks -> verification -> test]**를 차례로 선택하여 **전체 테스트를 수행**한다.
+
+  ![GradleTest](images/GradleTest.PNG)
+
+  * test를 실해 보면 롬복을 이용한 테스트 외에 스프링을 이용한 테스트는 모두 실패하는 것을 확인할 수 있다.
+
+    
+
+  * **문제 1. CustomOAuth2UserService을 찾을 수 없음**
+
+    * "hello가_리턴된다"의 메시지를 보면 "No qualifying bean of type 'com.allsser.book.springboot.config.auth.CustomOAuth2UserService' " 라는 메시지가 등장한다.
+
+    ![hello가리턴된다](images/hello가리턴된다.PNG)
+
+    * 이는 CustomOAuth2UserService를 생성하는데 필요한 **소셜 로그인 관련 설정값들이 없기 때문에** 발생한다.
+    * **application-oauth.properties에 설정값들을 추가**했는데 왜 설정이 없다고 할까? 이유는 src/main 환경과 src/test 환경의 차이 때문이다. 둘은 본인만의 호환경 구성을 가진다. 다만, src/main/resource/application.properties가 테스트 코드를 수행할 때도 적용되는 이유는 **test에 application.properties가 없으면 main의 설정을 그대로 가져오기 때문**이다. 다만, 자동으로 가져오는 옵션의 범위는 application.properties 파일까지이다. 즉, application-oauth.properties는 **test에 파일이 없다고 가져오는 파일은 아니라는 점**이다.
+* 이 문제를 해결하기 위해 테스트 환경을 위한 application.properties를 만든다. 실제로 구글 연동까지 진행할 것이 아니므로 **가짜 설정값**을 등록한다.
+    
+**src/test/resources/application.properties**
+    
+    ```application.properties
+    spring.jpa.show_sql=true
+    spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL57Dialect
+    spring.jpa.properties.hibernate.dialect.storage_engine=innodb
+    spring.datasource.hikari.jdbc-url=jdbc:h2:mem:testdb;MODE=MYSQL
+    spring.datasource.hikari.username=sa
+    spring.h2.console.enabled=true
+    spring.session.store-type=jdbc
+    
+    
+    # Test OAuth
+    
+    spring.security.oauth2.client.registration.google.client-id=test
+    spring.security.oauth2.client.registration.google.client-secret=test
+    spring.security.oauth2.client.registration.google.scope=profile, email
+    ```
+    
+    * 실패 테스크가 줄어든 것을 확인할 수 있다.
+    
+  * **문제 2. 302 Status Code**
+  
+    * 두 번째로 "Posts_등록된다" 테스트 로그를 확인해 본다.
+    * 응답의 결과로 200(정상 응답) Status Code를 원했지만 결과는 302(리다이렉션 응답) Status Code가 와서 실패했다. 이는 스프링 스큐리티 설정 때문에 **인증되지 않은 사용자의 요청은 이동**시키기 때문이다.  그래서 이런 API 요청은 **임의로 인증된 사용자를 추가**하여 API만 테스트해 볼 수 있게 한다.
+    * **스프링 시큐리티 테스트를 위한 여러 도구를 지**원하는 spring-security-test를 build.gradle에 추가한다.
+  
+    > testImplementation("org.springframework.security:spring-security-test")
+  
+    * 그리고 PostsApiControllerTest에 2개 테스트 메소드에 **임의 사용자 인증을 추가**한다.
+  
+    **PostsApiController**
+  
+    ```
+    @Test
+    @WithMockUser(roles="USER")	//	{1}
+    pulic void Posts_등록된다( ) throw Exception {
+    ...
+    
+    @Test
+    @WithMockUser(roles="USER")
+    public void Posts_수정된다() throw Exception {
+    ...
+    ```
+  
+    * **@WithMockUser(roles="USER")**
+  
+      * 인증된 모의(가짜) 사용자를 만들어서 사용한다.
+      * roles에 권한을 추가할 수 있다.
+      * 즉, 이 어노테이션으로 인해 ROLE_USER 권한을 가진 사용자가 API를 요청하는 것과 동인한 효과를 가지게 된다.
+  
+      
+  
+    * 이정도만 하면 테스트가 될 것 같지만, 실제로 작동하진 않는다.
+  
+    * **@WithMockUser가 MockMvc에서만 작동하기 때문**이다. 현재 PostsApiControllerTset는 @SpringBootTest로만 되어있으며 **MockMvc**를 전혀 사용하지 않는다. 그래서 **@SpringBootTest에서 MockMvc를 사용하는 방법**을 사용한다.
+  
+    **PostsApiControllerTest**
+  
+    ```PostsApiControllerTest
+    import com.allsser.book.springboot.domain.posts.Posts;
+    import com.allsser.book.springboot.domain.posts.PostsRepository;
+    import com.allsser.book.springboot.web.dto.PostsSaveRequesrDto;
+    import com.allsser.book.springboot.web.dto.PostsUpdateRequestDto;
+    import com.fasterxml.jackson.databind.ObjectMapper;
+    import org.junit.jupiter.api.AfterEach;
+    import org.junit.jupiter.api.BeforeEach;
+    import org.junit.jupiter.api.Test;
+    import org.junit.jupiter.api.extension.ExtendWith;
+    
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.boot.test.context.SpringBootTest;
+    import org.springframework.boot.test.web.client.TestRestTemplate;
+    import org.springframework.boot.web.server.LocalServerPort;
+    import org.springframework.http.MediaType;
+    import org.springframework.security.test.context.support.WithMockUser;
+    
+    import org.springframework.test.context.junit.jupiter.SpringExtension;
+    import org.springframework.test.web.servlet.MockMvc;
+    import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+    import org.springframework.web.context.WebApplicationContext;
+    
+    import java.util.List;
+    
+    import static org.assertj.core.api.Assertions.assertThat;
+    import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+    import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+    import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+    import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+    
+    @ExtendWith(SpringExtension.class)
+    @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+    public class PostsApiControllerTest {
+    	...
+        
+        @Autowired
+        private WebApplicationContext context;
+    
+        private MockMvc mvc;
+    
+        @BeforeEach	//	{1}
+        public void setup() {
+            mvc = MockMvcBuilders
+                    .webAppContextSetup(context)
+                    .apply(springSecurity())
+                    .build();
+        }
+        
+        ...
+    
+        @Test
+        @WithMockUser(roles = "USER")
+        public void Posts_등록된다() throws Exception {
+            ...
+            
+            //when
+            mvc.perform(post(url)	// {2}
+                    .contentType(MediaType.APPLICATION_JSON_UTF8)
+                    .content(new ObjectMapper().writeValueAsString(requestDto)))
+                    .andExpect(status().isOk());
+    
+            // then
+            List<Posts> all = postsRepository.findAll();
+            assertThat(all.get(0).getTitle()).isEqualTo(title);
+            assertThat(all.get(0).getContent()).isEqualTo(content);
+        }
+    
+        @Test
+        @WithMockUser(roles = "USER")
+        public void Posts_수정된다() throws Exception {
+            ...
+            
+            // when
+            mvc.perform(put(url)
+                    .contentType(MediaType.APPLICATION_JSON_UTF8)
+                    .content(new ObjectMapper().writeValueAsString(requestDto)))
+                    .andExpect(status().isOk());
+    
+            // then
+            List<Posts> all = postsRepository.findAll();
+            assertThat(all.get(0).getTitle()).isEqualTo(expectedTitle);
+            assertThat(all.get(0).getContent()).isEqualTo(expectedContent);
+        }
+    }
+    ```
+  
+    * {1} **@BeforEach**
+  
+      * 어노테이션 : @Before (JUnit 4) -> **@BeforeEach (JUnit 5)**
+      * import 패키지 : org.junit.Before (JUnit 4) -> **org.junit.jupiter.api.BeforeEach (JUnit 5)**
+      * 매번 테스트가 시작되기 전에 **MockMvc** 인스턴스를 생성한다.
+  
+    * {2} **mvc.perform**
+  
+      * 생성된 MockMvc를 통해 API를 테스트 한다.
+      * 본문(Body) 영역은 문자열로 표현하기 위해 ObjectMapper를 통해 문자열 JSON으로 변환한다.
+  
+      
+  
+  * **문제 3 @WebMvcTest에서 CustomOAuth2UserService을 찾을 수 없음**
+  
+    * 제일 앞에서 발생산 "Hello가 리턴된다" 테스트를 확인해 보면 첫 번째로 해결한 것과 동일한 메시지인 **"No qualifying bean of type 'com.allsser.book.springboot.config.auth.CustomOAuth2UserService'"**가 뜬다.
+    * HelloControllerTest는 1번과는 조금 다른점이 있다. 바로 **@WebMvcTest**를 사용한다는 것이다. 1번을 통해 스프링 시큐리티 설정은 잘 작동했지만, **@WebMvcTest**는 **CustomOAuth2UserService를 스캔하지 않기 때문**이다.
+    * @WebMvcTest는 WebSecurityConfigurerAdapter, WebMvcConfigurer를 비롯한 @ControllerAdvice, @Controller를 읽는다. 즉, **@Repository, @Service, @Component는 스캔 대상이 아니다.** 그러니 SecurityConfig는 읽었지만, SecurityConfig를 생성하기 위해 필요한 CustomOAuth2UserService는 읽을수가 없어 앞에서와 같이 에러가 발생한 것이다.
+    * 문제를 해결하기 위해 **스캔 대상에서 SecurityConfig를 제거한다.**
+  
+    **HelloControllerTest**
+  
+    ```HelloControllerTest
+    @WebMvcTest(controllers = HelloController.class,
+            excludeFilters = {
+                    @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, 
+                    								classes = SecurityConfig.class)
+            }
+    )
+    ```
+  
+    * 언제 삭제될지 모르니 사용하지 않는 것을 추천한다.
+  
+      
+  
+    * **@WithMockUser**를 사용해서 가짜로 인증된 사용자를 생성한다.
+  
+    **HelloControllerTest**
+  
+    ```HelloControllerTest
+    @WithMockUser(roles="USER")
+    @Test
+    public void hello가_리턴된다() throws Exception
+    	...
+    }
+    
+    @WithMockUser(roles="USER")
+    @Test
+    public void helloDto가_리턴된다() throws Exception {
+    	...
+    }
+    ```
+  
+    * 이렇게 한 뒤 다시 테스트를 돌려보면 다음과 같은 추가 에러가 발생한다.
+  
+    > java.lang.IllegalArgumentException: At least one JPA metamodel must be present!
+  
+    * 이 에러는 **@EnableJpaAuditing**로 인해 발생한다. @EnableJpaAuditing를 사용하기 위해서는 최소 하나의 **@Entity 클래스가 필요**하다.
+    * @WebMvcTest이다 보니 당연히 없다.
+    * @EnableJpaAuditing가 @SpringBootApplication와 함께 있다보니 @WebMvcTset에서도 스캔하게 되었다. 그래서 @EnableJpaAuditing과 @SpringBootApplication 둘을 분리한다.
+    * **Application.java**에서 @EnableJpaAuditing를 제거한다.
+  
+    **Application.java**
+  
+    ```Application.java
+    // @EnableJpaAuditing가 삭제됨
+    @SpringBootApplication
+    public class Application {
+        public static void main(String[] args) {
+    
+            SpringApplication.run(Application.class, args);
+        }
+    }
+    ```
+  
+    * 그리고 config 패키지에 **JpaConfig**를 생성하여 **@EnableJpaAuditing**를 추가해준다.
+  
+    **.../springboot/config/JpaConfig**
+  
+    ```JpaConfig
+    import org.springframework.context.annotation.Configuration;
+    import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+    
+    @Configuration
+    @EnableJpaAuditing	//	JPA Auditing 활성화
+    public class JpaConfig {}
+    ```
+  
+    * 전체 테스트를 수행해 보면 모든 테스트를 통과하는 것을 확인할 수 있다. 
+  
+      
+  
+    * 앞의 과정을 토대로 스프링 시큐리티 적용으로 깨진 테스트를 적절하게 수정할 수 있게 되었다.
+
+
+
+---
+

@@ -1,10 +1,10 @@
+com/allsser/book/springboot/domain/posts/PostsRepositoryTest.java
+ com.allsser.book.springboot.domain.posts.PostsRepositoryTest
+com/allsser/book/springboot/web/IndexControllerTeset.java
+ com.allsser.book.springboot.web.IndexControllerTeset
 com/allsser/book/springboot/web/dto/HelloResponseDtoTest.java
  com.allsser.book.springboot.web.dto.HelloResponseDtoTest
 com/allsser/book/springboot/web/HelloControllerTest.java
  com.allsser.book.springboot.web.HelloControllerTest
-com/allsser/book/springboot/domain/posts/PostsRepositoryTest.java
- com.allsser.book.springboot.domain.posts.PostsRepositoryTest
 com/allsser/book/springboot/web/PostsApiControllerTest.java
  com.allsser.book.springboot.web.PostsApiControllerTest
-com/allsser/book/springboot/web/IndexControllerTeset.java
- com.allsser.book.springboot.web.IndexControllerTeset
