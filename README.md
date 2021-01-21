@@ -3447,7 +3447,8 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     * 이는 CustomOAuth2UserService를 생성하는데 필요한 **소셜 로그인 관련 설정값들이 없기 때문에** 발생한다.
     * **application-oauth.properties에 설정값들을 추가**했는데 왜 설정이 없다고 할까? 이유는 src/main 환경과 src/test 환경의 차이 때문이다. 둘은 본인만의 호환경 구성을 가진다. 다만, src/main/resource/application.properties가 테스트 코드를 수행할 때도 적용되는 이유는 **test에 application.properties가 없으면 main의 설정을 그대로 가져오기 때문**이다. 다만, 자동으로 가져오는 옵션의 범위는 application.properties 파일까지이다. 즉, application-oauth.properties는 **test에 파일이 없다고 가져오는 파일은 아니라는 점**이다.
 * 이 문제를 해결하기 위해 테스트 환경을 위한 application.properties를 만든다. 실제로 구글 연동까지 진행할 것이 아니므로 **가짜 설정값**을 등록한다.
-    
+  
+
 **src/test/resources/application.properties**
     
     ```application.properties
@@ -3458,8 +3459,9 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     spring.datasource.hikari.username=sa
     spring.h2.console.enabled=true
     spring.session.store-type=jdbc
-    
-    
+
+
+​    
     # Test OAuth
     
     spring.security.oauth2.client.registration.google.client-id=test
@@ -3468,19 +3470,20 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     ```
     
     * 실패 테스크가 줄어든 것을 확인할 수 있다.
-    
+
   * **문제 2. 302 Status Code**
   
     * 두 번째로 "Posts_등록된다" 테스트 로그를 확인해 본다.
     * 응답의 결과로 200(정상 응답) Status Code를 원했지만 결과는 302(리다이렉션 응답) Status Code가 와서 실패했다. 이는 스프링 스큐리티 설정 때문에 **인증되지 않은 사용자의 요청은 이동**시키기 때문이다.  그래서 이런 API 요청은 **임의로 인증된 사용자를 추가**하여 API만 테스트해 볼 수 있게 한다.
     * **스프링 시큐리티 테스트를 위한 여러 도구를 지**원하는 spring-security-test를 build.gradle에 추가한다.
-  
+    
     > testImplementation("org.springframework.security:spring-security-test")
   
     * 그리고 PostsApiControllerTest에 2개 테스트 메소드에 **임의 사용자 인증을 추가**한다.
-  
-    **PostsApiController**
-  
+    
+    
+  **PostsApiController**
+    
     ```
     @Test
     @WithMockUser(roles="USER")	//	{1}
@@ -3491,22 +3494,23 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     @WithMockUser(roles="USER")
     public void Posts_수정된다() throw Exception {
     ...
-    ```
-  
-    * **@WithMockUser(roles="USER")**
-  
+  ```
+    
+  * **@WithMockUser(roles="USER")**
+      
       * 인증된 모의(가짜) 사용자를 만들어서 사용한다.
       * roles에 권한을 추가할 수 있다.
-      * 즉, 이 어노테이션으로 인해 ROLE_USER 권한을 가진 사용자가 API를 요청하는 것과 동인한 효과를 가지게 된다.
-  
+    * 즉, 이 어노테이션으로 인해 ROLE_USER 권한을 가진 사용자가 API를 요청하는 것과 동인한 효과를 가지게 된다.
+      
+    
+      
+  * 이정도만 하면 테스트가 될 것 같지만, 실제로 작동하진 않는다.
+      
+  * **@WithMockUser가 MockMvc에서만 작동하기 때문**이다. 현재 PostsApiControllerTset는 @SpringBootTest로만 되어있으며 **MockMvc**를 전혀 사용하지 않는다. 그래서 **@SpringBootTest에서 MockMvc를 사용하는 방법**을 사용한다.
       
   
-    * 이정도만 하면 테스트가 될 것 같지만, 실제로 작동하진 않는다.
-  
-    * **@WithMockUser가 MockMvc에서만 작동하기 때문**이다. 현재 PostsApiControllerTset는 @SpringBootTest로만 되어있으며 **MockMvc**를 전혀 사용하지 않는다. 그래서 **@SpringBootTest에서 MockMvc를 사용하는 방법**을 사용한다.
-  
     **PostsApiControllerTest**
-  
+    
     ```PostsApiControllerTest
     import com.allsser.book.springboot.domain.posts.Posts;
     import com.allsser.book.springboot.domain.posts.PostsRepository;
@@ -3591,21 +3595,21 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
             assertThat(all.get(0).getTitle()).isEqualTo(expectedTitle);
             assertThat(all.get(0).getContent()).isEqualTo(expectedContent);
         }
-    }
+  }
     ```
   
     * {1} **@BeforEach**
-  
-      * 어노테이션 : @Before (JUnit 4) -> **@BeforeEach (JUnit 5)**
-      * import 패키지 : org.junit.Before (JUnit 4) -> **org.junit.jupiter.api.BeforeEach (JUnit 5)**
-      * 매번 테스트가 시작되기 전에 **MockMvc** 인스턴스를 생성한다.
-  
-    * {2} **mvc.perform**
-  
-      * 생성된 MockMvc를 통해 API를 테스트 한다.
-      * 본문(Body) 영역은 문자열로 표현하기 위해 ObjectMapper를 통해 문자열 JSON으로 변환한다.
-  
       
+      * 어노테이션 : @Before (JUnit 4) -> **@BeforeEach (JUnit 5)**
+    * import 패키지 : org.junit.Before (JUnit 4) -> **org.junit.jupiter.api.BeforeEach (JUnit 5)**
+      * 매번 테스트가 시작되기 전에 **MockMvc** 인스턴스를 생성한다.
+    
+    * {2} **mvc.perform**
+      
+    * 생성된 MockMvc를 통해 API를 테스트 한다.
+      * 본문(Body) 영역은 문자열로 표현하기 위해 ObjectMapper를 통해 문자열 JSON으로 변환한다.
+    
+    
   
   * **문제 3 @WebMvcTest에서 CustomOAuth2UserService을 찾을 수 없음**
   
@@ -3613,9 +3617,10 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     * HelloControllerTest는 1번과는 조금 다른점이 있다. 바로 **@WebMvcTest**를 사용한다는 것이다. 1번을 통해 스프링 시큐리티 설정은 잘 작동했지만, **@WebMvcTest**는 **CustomOAuth2UserService를 스캔하지 않기 때문**이다.
     * @WebMvcTest는 WebSecurityConfigurerAdapter, WebMvcConfigurer를 비롯한 @ControllerAdvice, @Controller를 읽는다. 즉, **@Repository, @Service, @Component는 스캔 대상이 아니다.** 그러니 SecurityConfig는 읽었지만, SecurityConfig를 생성하기 위해 필요한 CustomOAuth2UserService는 읽을수가 없어 앞에서와 같이 에러가 발생한 것이다.
     * 문제를 해결하기 위해 **스캔 대상에서 SecurityConfig를 제거한다.**
-  
-    **HelloControllerTest**
-  
+    
+    
+  **HelloControllerTest**
+    
     ```HelloControllerTest
     @WebMvcTest(controllers = HelloController.class,
             excludeFilters = {
@@ -3623,16 +3628,17 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
                     								classes = SecurityConfig.class)
             }
     )
-    ```
-  
-    * 언제 삭제될지 모르니 사용하지 않는 것을 추천한다.
-  
+  ```
+    
+  * 언제 삭제될지 모르니 사용하지 않는 것을 추천한다.
+      
+    
+      
+  * **@WithMockUser**를 사용해서 가짜로 인증된 사용자를 생성한다.
       
   
-    * **@WithMockUser**를 사용해서 가짜로 인증된 사용자를 생성한다.
-  
     **HelloControllerTest**
-  
+    
     ```HelloControllerTest
     @WithMockUser(roles="USER")
     @Test
@@ -3644,20 +3650,21 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     @Test
     public void helloDto가_리턴된다() throws Exception {
     	...
-    }
+  }
     ```
   
     * 이렇게 한 뒤 다시 테스트를 돌려보면 다음과 같은 추가 에러가 발생한다.
-  
+    
     > java.lang.IllegalArgumentException: At least one JPA metamodel must be present!
-  
+    
     * 이 에러는 **@EnableJpaAuditing**로 인해 발생한다. @EnableJpaAuditing를 사용하기 위해서는 최소 하나의 **@Entity 클래스가 필요**하다.
     * @WebMvcTest이다 보니 당연히 없다.
-    * @EnableJpaAuditing가 @SpringBootApplication와 함께 있다보니 @WebMvcTset에서도 스캔하게 되었다. 그래서 @EnableJpaAuditing과 @SpringBootApplication 둘을 분리한다.
+  * @EnableJpaAuditing가 @SpringBootApplication와 함께 있다보니 @WebMvcTset에서도 스캔하게 되었다. 그래서 @EnableJpaAuditing과 @SpringBootApplication 둘을 분리한다.
     * **Application.java**에서 @EnableJpaAuditing를 제거한다.
-  
+    
+    
     **Application.java**
-  
+    
     ```Application.java
     // @EnableJpaAuditing가 삭제됨
     @SpringBootApplication
@@ -3665,27 +3672,28 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
         public static void main(String[] args) {
     
             SpringApplication.run(Application.class, args);
-        }
+      }
     }
-    ```
-  
-    * 그리고 config 패키지에 **JpaConfig**를 생성하여 **@EnableJpaAuditing**를 추가해준다.
-  
+  ```
+    
+  * 그리고 config 패키지에 **JpaConfig**를 생성하여 **@EnableJpaAuditing**를 추가해준다.
+      
+    
     **.../springboot/config/JpaConfig**
-  
+    
     ```JpaConfig
     import org.springframework.context.annotation.Configuration;
     import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
     
-    @Configuration
+  @Configuration
     @EnableJpaAuditing	//	JPA Auditing 활성화
-    public class JpaConfig {}
+  public class JpaConfig {}
     ```
   
     * 전체 테스트를 수행해 보면 모든 테스트를 통과하는 것을 확인할 수 있다. 
-  
       
-  
+      
+      
     * 앞의 과정을 토대로 스프링 시큐리티 적용으로 깨진 테스트를 적절하게 수정할 수 있게 되었다.
 
 
@@ -3781,3 +3789,8 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     * t2 이외 t3도 있으며 보통 이들은 **T 시리즈**라고 한다. T 시리즈는 범용 시리즈로 불리기도 한다.
     * 이들은 다른 서비스와 달리 **크레딧**이란 일종의 CPU를 사용할 수 있는 포인트 개념이 있다. 인스턴스 크기에 따라 정해진 비율로 **CPU 크레딧을 계속 받게 되며**, 사용하지 않을 때는 크레딧을 축적하고, 사용할 때 이 크레딧을 사용한다.
     * 정해진 사용보다 더 높은 트래픽이 오면 크레딧을 좀 더 적극적으로 사용하면서 트래픽을 처리하지만, **크레딧이 모두 사용되면 더이상 EC2를 사용할 수 없다.** 그래서 트래픽이 높은 서비스들은 T 시리즈를 쓰지 않고 다른 시리즈를 사용하기도 한다.
+
+
+
+#  아아아아 안됨 ㅡㅡ
+
