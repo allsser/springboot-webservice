@@ -42,6 +42,7 @@ dependencies {
     // spring-session-jdbc 등록
     implementation('org.springframework.session:spring-session-jdbc')
 
+    // MariaDB 드라이버
     implementation("org.mariadb.jdbc:mariadb-java-client")
 
     testImplementation('org.springframework.boot:spring-boot-starter-test')
