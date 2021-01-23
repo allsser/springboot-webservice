@@ -3462,8 +3462,8 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 
 ​    
-    # Test OAuth
-    
+​    # Test OAuth
+​    
     spring.security.oauth2.client.registration.google.client-id=test
     spring.security.oauth2.client.registration.google.client-secret=test
     spring.security.oauth2.client.registration.google.scope=profile, email
@@ -3482,6 +3482,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     * 그리고 PostsApiControllerTest에 2개 테스트 메소드에 **임의 사용자 인증을 추가**한다.
     
     
+
   **PostsApiController**
     
     ```
@@ -3596,8 +3597,8 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
             assertThat(all.get(0).getContent()).isEqualTo(expectedContent);
         }
   }
-    ```
-  
+  ```
+
     * {1} **@BeforEach**
       
       * 어노테이션 : @Before (JUnit 4) -> **@BeforeEach (JUnit 5)**
@@ -3608,9 +3609,10 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
       
     * 생성된 MockMvc를 통해 API를 테스트 한다.
       * 본문(Body) 영역은 문자열로 표현하기 위해 ObjectMapper를 통해 문자열 JSON으로 변환한다.
-    
-    
-  
+
+
+​    
+
   * **문제 3 @WebMvcTest에서 CustomOAuth2UserService을 찾을 수 없음**
   
     * 제일 앞에서 발생산 "Hello가 리턴된다" 테스트를 확인해 보면 첫 번째로 해결한 것과 동일한 메시지인 **"No qualifying bean of type 'com.allsser.book.springboot.config.auth.CustomOAuth2UserService'"**가 뜬다.
@@ -3619,6 +3621,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     * 문제를 해결하기 위해 **스캔 대상에서 SecurityConfig를 제거한다.**
     
     
+
   **HelloControllerTest**
     
     ```HelloControllerTest
@@ -3651,8 +3654,8 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     public void helloDto가_리턴된다() throws Exception {
     	...
   }
-    ```
-  
+  ```
+
     * 이렇게 한 뒤 다시 테스트를 돌려보면 다음과 같은 추가 에러가 발생한다.
     
     > java.lang.IllegalArgumentException: At least one JPA metamodel must be present!
@@ -3674,6 +3677,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
             SpringApplication.run(Application.class, args);
       }
     }
+    ```
   ```
     
   * 그리고 config 패키지에 **JpaConfig**를 생성하여 **@EnableJpaAuditing**를 추가해준다.
@@ -3688,12 +3692,13 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
   @Configuration
     @EnableJpaAuditing	//	JPA Auditing 활성화
   public class JpaConfig {}
-    ```
-  
+  ```
+
     * 전체 테스트를 수행해 보면 모든 테스트를 통과하는 것을 확인할 수 있다. 
-      
-      
-      
+
+
+​      
+​      
     * 앞의 과정을 토대로 스프링 시큐리티 적용으로 깨진 테스트를 적절하게 수정할 수 있게 되었다.
 
 
@@ -3790,7 +3795,5 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     * 이들은 다른 서비스와 달리 **크레딧**이란 일종의 CPU를 사용할 수 있는 포인트 개념이 있다. 인스턴스 크기에 따라 정해진 비율로 **CPU 크레딧을 계속 받게 되며**, 사용하지 않을 때는 크레딧을 축적하고, 사용할 때 이 크레딧을 사용한다.
     * 정해진 사용보다 더 높은 트래픽이 오면 크레딧을 좀 더 적극적으로 사용하면서 트래픽을 처리하지만, **크레딧이 모두 사용되면 더이상 EC2를 사용할 수 없다.** 그래서 트래픽이 높은 서비스들은 T 시리즈를 쓰지 않고 다른 시리즈를 사용하기도 한다.
 
-
-
-#  아아아아 안됨 ㅡㅡ
+#  
 
