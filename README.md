@@ -8,6 +8,7 @@
 * Gradle 6.7.1
 * IntelliJ IDEA 2020.3
 * JUnit 5
+* MariaDB 10.4.8
 
 
 
