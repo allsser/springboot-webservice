@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.allsser.book.springboot.web.dto.HelloResponseDtoTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2021-01-28T10:48:34" hostname="ip-172-31-2-111.ap-northeast-2.compute.internal" time="0.004">
+<testsuite name="com.allsser.book.springboot.web.dto.HelloResponseDtoTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2021-01-28T15:38:21" hostname="DESKTOP-DI7T465" time="0.003">
   <properties/>
-  <testcase name="롬복_기능_테스트()" classname="com.allsser.book.springboot.web.dto.HelloResponseDtoTest" time="0.004"/>
+  <testcase name="롬복_기능_테스트()" classname="com.allsser.book.springboot.web.dto.HelloResponseDtoTest" time="0.003"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>
