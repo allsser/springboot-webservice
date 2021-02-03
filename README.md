@@ -82,6 +82,16 @@
    
 7. ### [AWS에 데이터베이스 환경을 만들기 (AWS RDS)](#7-aws에-데이터베이스-환경을-만들기-aws-rds)
 
+   7.1 [RDS 인스턴스 생성하기]()
+
+   7.2 [RDS 운영환경에 맞는 파라미터 설정하기]()
+
+   7.3 [내 PC에서 RDS에 접속]()
+
+   7.4 [EC2에서 RDS에서 접근 확인]()
+
+8. ### [EC2 서버에 프로젝트를 배포]()
+
 ---
 
 ### 1. Intellij Springboot start
@@ -4234,5 +4244,147 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 **Database 플러그인 설치**
 
-내일 부터 다시 시작
+* 로컬에서 원격 데이터베이스로 붙을 때 GUI 클라이언트를 많이 사용한다.
+* **인텔리제이에 Database 플러그인**을 설치하여 진행한다.
+
+
+
+* RDS 정보 페이지에서 **엔드 포인트**를 확인한다. 엔드 포인트가 접근 가능한 URL이므로 메모장 같은 곳에 복사해 둔다.
+
+  ![엔드포인트](images/엔드포인트.PNG)
+
+
+
+* 인텔리제이로 이동해서 database 플러그인을 검색하여 **Database Navigator**를 찾아 [Install]을 클릭하여 설치해 준다.
+
+  ![database](images/database.PNG)
+
+  * 설치가 끝나면 인텔리제이 재시작을 한 뒤 Action 검색(Ctrl+Shift+a)으로 **Database Browser**를 실행행한다.
+
+
+
+* 프로젝트 왼쪽 사이드바에 **DB Browser**가 노출된다. **New Connection**을 클릭하여 **MySQL** 접속 정보를 연다. MariaDB는 MySQL 기반이므로 MySQL을 사용하면 된다.
+
+* 본인이 생성한 RDS의 정보를 차례로 등록하면 된다.
+
+  ![RDS정보](images/RDS정보.PNG)
+
+  * 마스터 계정명과 비밀번호를 등록한 뒤, 화면 아래의 [Test Connection]을 클릭하여 연결 테스트를 실핼한다.
+  * **Connection Successful** 메시지를 보았다면 정상으로 연결이 가능하기 때문에 [Apply] 클릭하여 정보를 저장한다.
+
+
+
+* 인텔리제이에 RDS의 스키마가 노출된다. 생성되어 있는 콘솔창에서 SQL을 실행시킨다. 쿼리가 수행될 database를 선택하는 쿼리이다.
+
+  > use AWS RDS 웹 콘솔에서 지정한 데이터베이스명;
+
+  * 만약 본인이 RDS 생성 시 지정한 database 명을 잊었다면 인텔리제이의 Schema 항목을 보면 **MySQL에서 기본으로 생성하는 스키마 외에 다른 스키마**가 1개 추가되어 있으니 이를 확인하면 된다.
+
+
+
+* 쿼리를 실행시키기 위해서는 쿼리문을 드래그로 선택한 뒤 화면의 위쪽에 화살표로 된 [Execute Statement] 버튼을 클릭하면 쿼리문이 실행된다.
+
+  ![쿼리실행](images/쿼리실행.PNG)
+
+  * Execute Console에서 SQL statement executed successfully 메시지가 떴다면 쿼리가 정상적으로 수행괸 것이다.
+
+    ![쿼리실행정상](images/쿼리실행정상.PNG)
+
+
+
+* 데이터베이스가 선택된 상태에서 **현재의 character_set, collation** 설정을 확인한다.
+
+  > show variables like 'c
+
+  * 쿼리 결과를 확인해 보면 다른 필드들은 모두 utf8mb4가 잘 적용되어 있는데 **character_set_database, collation_connection** 2가지 항목이 latin1로 되어있다.
+
+  * 2개의 항목이 MariaDB에서만 RDS 파라미터 그룹으로는 변경이 안된다. 직접 변경을 해줘야 한다.
+
+    > ALTER DATABASE 데이터베이스명
+    >
+    > CHARACTER SET = 'utf8mb4'
+    >
+    > COLLATE = 'utf8mb4_general_ci';
+
+  * 쿼리를 수행하였다면 다시 한번 character set을 확인해 본다.
+
+  ![변경](images/변경.PNG)
+
+  * 성공적으로 모든 항목이 utf8mb4로 변경된 것을 확인할 수 있다.
+
+
+
+* **타임존**을 확인해 본다.
+
+  > select @@time_zone, now();
+
+  * RDS 파라미터 그룹이 잘 적용되어 한국 시간(Asia/Seoul)으로 된 것을 확인할 수 있다.
+
+
+
+* 마지막으로 한글명이 잘 들어가는지 간단한 테이블 생성과 insert 쿼리를 실행해 본다.
+
+  > 테이블 생성은 인코딩 설정 변경 전에 생성하면 안된다. 만들어질 당시의 설정값을 그대로 유지하고 있어, 자동 변경이 되지 않고 강제로 변경해야만 한다. 웬만하면 테이블은 모든 설정이 끝난 후 생성하는 것이 좋다.
+
+  > CREATE TABLE tset (
+  >
+  > ​	id bigint(20) NOT NULL AUTO_INCREMENT,
+  >
+  > ​	content varchar(255) DEFAULT NULL,
+  >
+  > ​	PRIMARY KEY (id)
+  >
+  > ) ENGINE=InnoDB;
+  >
+  > 
+  >
+  > insert into test(content) values ('테스트');
+  >
+  >  
+  >
+  > select * from test;
+
+  * 실행결과 한글 데이터도 잘 등록되는 것을 확인할 수 있다.
+
+    ![쿼리test](images/쿼리test.PNG)
+
+
+
+#### 7.4 EC2에서 RDS에서 접근 확인
+
+* EC2에 ssh 접속을 한다. 접속되었가면 MySQL 접근 테스트를 위해 MySQL CLI를 설치한다.
+
+  > sudo yum install mysql
+
+  > 실제 EC2의 MySQL을 설치해서 쓰는게 아닌, 명령어 라인만 쓰기 위한 설치이다.
+
+  
+
+* 설치가 다 되었으면 로컬에서 접근하듯이 계정, 비밀번호, 호스트 주소를 사용해 RDS에 접속한다.
+
+  > mysql -u 계정 -p -h Host주소
+
+  > mysql -u allsser -p -h  springboot2-webservice.ctmjgqvsf9cj.ap-northeast-2.rds.amazonaws.com(엔드포인트)
+
+  
+
+* 패스워드를 입력하라는 메시지가 나오면 패스워드까지 입력한다. 다음과 같이 EC2에서 RDS로 접속되는 것을 확인할 수 있다.
+
+  ![ec2rds](images/ec2rds.PNG)
+
+
+
+* RDS에 접속되었면 실제로 생성한 RDS가 맞는지 간단한 쿼리를 실행해 본다.
+
+  > show databases;
+
+  ![showdatabases](images/showdatabases.PNG)
+
+  * 앞서 생성했던 springboot2_webservice라는 데이터베이스가 있는것을 확인할 수 있다.
+
+
+
+---
+
+### 8. EC2 서버에 프로젝트를 배포
 
