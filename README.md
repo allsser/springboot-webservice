@@ -82,15 +82,15 @@
    
 7. ### [AWS에 데이터베이스 환경을 만들기 (AWS RDS)](#7-aws에-데이터베이스-환경을-만들기-aws-rds)
 
-   7.1 [RDS 인스턴스 생성하기]()
+   7.1 [RDS 인스턴스 생성하기](#71-rds-인스턴스-생성하기)
 
-   7.2 [RDS 운영환경에 맞는 파라미터 설정하기]()
+   7.2 [RDS 운영환경에 맞는 파라미터 설정하기](#72-rds-운영환경에-맞는-파라미터-설정하기)
 
-   7.3 [내 PC에서 RDS에 접속]()
+   7.3 [내 PC에서 RDS에 접속](#73-내-pc에서-rds에-접속)
 
-   7.4 [EC2에서 RDS에서 접근 확인]()
+   7.4 [EC2에서 RDS에서 접근 확인](#74-ec2에서-rds에서-접근-확인)
 
-8. ### [EC2 서버에 프로젝트를 배포]()
+8. ### [EC2 서버에 프로젝트를 배포](#8-ec2-서버에-프로젝트를-배포)
 
 ---
 
@@ -3717,7 +3717,6 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     * 전체 테스트를 수행해 보면 모든 테스트를 통과하는 것을 확인할 수 있다. 
 
 
-​      
 ​    * 앞의 과정을 토대로 스프링 시큐리티 적용으로 깨진 테스트를 적절하게 수정할 수 있게 되었다.
 
 
@@ -4387,4 +4386,224 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 ---
 
 ### 8. EC2 서버에 프로젝트를 배포
+
+#### 8.1 EC2에 프로젝트 Clone 받기
+
+* 먼저 깃허브에서 코드를 받을올 수 있게 EC2에 깃을 설치한다. EC2로 접속해서 명령어를 입력한다.
+
+  > sudo yum install git
+
+* 설치가 완료되면 설치 상태를 확인한다.
+
+  > git --version
+
+* 깃이 성공적으로 설치되면 git clone으로 프로젝트를 저장할 디렉토리를 생성한다.
+
+  > mkdir ~/app && mkdir ~/app/step1
+
+* 생성된 디렉토리로 이동한다.
+
+  > cd ~/app/step1
+
+* 본인의 깃허브 웹페이지에서 https 주소를 복사한다. 복사한 https 주소를 통해 git clone을 진행한다.
+
+  > git clone 복사된 주소
+
+* git clone이 끝났으면 클론된 프로젝트로 이동해서 파일들이 잘 복사되있는지 확인한다.
+
+  > cd 프로젝트명
+  >
+  > ll
+
+  ![ll](images/ll.PNG)
+
+* 코드들이 잘 수행되는지 테스트로 검증한다.
+
+  > ./gradlew tset
+
+* 지금까지 문제가 없다면 정상적으로 테스트를 통과한다.
+
+  ![gradlewtest](images/gradlewtest.PNG)
+
+* 테스트가 실패해서 수정하고 깃허브에 푸시를 했다면 프로젝트 폴더안에서 git pull 명령어를 입력하면 된다.
+
+  > git pull
+
+* 만약 gradlew 실행 권한이 없다는 메시지가 뜬다면 명령어로 실행 권한을 추가한 뒤 다시 테스트를 진행하면 된다.
+
+  > -bash: ./gradlew: Permission denied
+
+  > chmod +x ./gradlew
+
+
+
+#### 8.2 배포 스크립트 만들기
+
+* 작성한 코드를 실제 서버에 반영하는 것을 배포라 한다.
+* 배포라 하면 다음의 과정을 모두 포괄하는 의미라고 보면 된다.
+  * git clone 혹은 git pull을 통해 새 버전의 프로젝트를 받음
+  * Gradle이나 Maven을 통해 프로젝트 테스트와 빌드
+  * EC2 서버에서 해당 프로젝트 실행 및 재실행
+
+
+
+* 앞선 과정을 **배포할 때마다 개발자가 하나하나 명령어를 실행**하는 것은 불편함이 많다. 그래서 이를 쉘 스크립트로 작성해 스크립트만 실행하면 앞의 과정이 차례로 진행되도록 한다.
+
+  > **쉘 스크립트와 빔(vim)은 서로 다른 역할을 한다.**
+  >
+  > * **쉘 스크립트** : **.sh**라는 파일 확장자를 가진 파일이다. 노드 JS가 .js라는 파일을 통해 서버에서 작동하는 것처럼 쉘 스크립트 역시 리눅스에서 기본적으로 사용할 수 있는 스크립트 파일의 한 종류이다.
+  > * **빔(vim)** : 리눅스 환경과 같이 GUI(윈도우와 같이 마우스를 사용할 수 있는 환경)가 아닌 환경에서 사용할 수 있는 편집 도구이다. 리눅스에선 빔 외에도 이맥스(Emacs), 나노(NANO) 등의 도구를 지원한다.
+
+* **~/app/step1/에 deploy.sh** 파일을 하나 생성한다.
+
+  > vim ~/app/step1/deploy.sh
+
+* 생성된 쉘 스크입트 파일에 다음의 코드를 추가한다.
+
+  ```deploy.sh
+  #!/bin/bash
+  
+  REPOSITORY=/home/ec2-user/app/step1		# 1
+  PROJECT_NAME=springboot-webservice
+  
+  cd $REPOSITORY/$PROJECT_NAME/		# 2
+  
+  echo "> Git Pull"		# 3
+  
+  git pull
+  
+  echo "> 프로젝트 Build 시작"
+  
+  ./gradlew build		# 4
+  
+  echo "> step1 디렉토리로 이동"
+  
+  cd $REPOSITORY
+  
+  echo "> build 파일 복사"
+  
+  cp $REPOSITORY/$PROJECT_NAME/build/libs/*.jar $REPOSITORY/		# 5
+  
+  echo "> 현재 구동중인 애플리케이션 pid 확인"
+  
+  CURRENT_PID=$(pgrep -f ${PROJECT_NAME}.*.jar)		# 6
+  
+  echo "현재 구동 중인 애플리케이션 pid: $CURRENT_PID"
+  
+  if [ -z "$CURRENT_PID" ]; then		# 7
+  	echo "> 현재 구동 중인 애플리케이션이 없으므로 종료하지 않습니다."
+  else
+  	echo "> kill -15 $CURRENT_PID"
+  	kill -155 $CURRENT_PID
+  	sleep 5
+  fi
+  
+  echo "> 새 애플리케이션 배포"
+  
+  JAR_NAME=$(ls -tr $REPOSITORY/ | grep jar | tail -n 1)		# 8
+  
+  echo "> JAR NAME: $JAR_NAME"
+  
+  nohup java -jar $REPOSITORY/$JAR_NAME 2>&1 &		# 9
+  ```
+
+  * {1} **REPOSITORY=/home/ec2-user/app/step1**
+    * 프로젝트 디렉토리 주소는 스크립트 내에서 자주 사용되는 값이기 때문에 이를 **변수**로 저장한다.
+    * 마찬가지로 **PROJECT__NAME=springboot-webservice**도 동일하게 **변수**로 저장한다.
+    * 쉘에서는 **타입 없이** 선언하여 저장한다.
+    * 쉘에서는 **$ 변수명**으로 변수를 사용할 수 있다.
+  * {2} **cd $REPOSITORY/$PROJECT_NAME/**
+    * 제일 처음 git clone 받았던 디렉토리로 이동한다.
+    * 바로 위의 쉘 변수 설정에 따라 **/home/ec2-user/app/step1/springboot-webservice** 주소로 이동한다.
+  * {3} **git pull**
+    * 디렉토리 이동 후, master 브랜치의 최신 내용을 받는다.
+  * {4} **./gradlew build**
+    * 프로젝트 내부의 gradlew로 build를 수행한다.
+  * {5} **cp ./build/libs/*.jar $REPOSITORY/**
+    * build의 결과물인 jar 파일을 복사해 jar 파일을 모아둔 위치로 복사한다.
+  * {6} **CURRENT_PID=$(pgrep -f ${PROJECT_NAME}.*.jar)**
+    * 기존에 수행 중이던 스프링 부트 애플리케이션을 종료한다.
+    * pgrep은 process id만 추출하는 명령어이다.
+    * -f 옵션은 프로세스 이름으로 찾는다.
+  * {7} **if ~ else ~ fi**
+    * 현재 구동 중인 프로세스가 있는지 없는지를 판단해서 기능을 수행한다.
+    * process id 값을 보고 프로세스가 있으면 해당 프로세스를 종료한다.
+  * {8} **JAR_NAME=$(ls -tr $REPOSITORY/ | grep jar | tail -n 1)**
+    * 새로 실행할 jar 파일명을 찾는다.
+    * 여러 jar 파일이 생기기 때문에 tail -n로 가장 나중의 jar 파일(최신파일)을 변수에 저장한다.
+  * {9} **nohup java -jar $REPOSITORY/$JAR_NAME 2>&1 &**
+    * 찾은 jar 파일명으로 해당 jar 파일을 nohup으로 실행한다.
+    * 스프링 부트의 장점으로 특별히 외장 톰캣을 설치할 필요가 없다.
+    * 내장 톰캣을 사용해서 jar 파일만 있으면 바로 웹 애플리케이션 서버를 실행할 수 있다.
+    * 일반적으로 자바를 실행할 때는 java -jar라는 명령어를 사용하지만, 이렇게 하면 사용자가 터미널 접속을 끊을 때 애플리케이션도 같이 종료된다.
+    * 애플리케이션 실핼자가 터미널을 종료해도 애플리케이션은 계속 구동될 수 있도록 nohup 명령어를 사용한다.
+
+
+
+* 이렇게 생성한 스크립트에 실행 권한을 추가한다.
+
+  > chmod +x ./deploy.sh
+
+
+
+* 확인해 보면 x 권한이 추가된 것을 확인할 수 있다.
+
+  ![x권한](images/x권한.PNG)
+
+
+
+* 스크립트를 다음 명령어로 실행한다.
+
+  > ./deploy.sh
+
+
+
+* 실행시키면 로그가 출력되며 애플리케이션이 실행된다.
+
+* nohup.out은 실행되는 애플리케이션에서 출력되는 모든 내용을 갖고 있다.
+
+  > vim nohup.out
+
+* nohup.out 제일 아래로 가면 ClientRegistrationRepository를 찾을 수 없다(that could not be found.)는 에러가 발생하면 애플리케이션 실행에 실패 했다는 것을 알 수 있다.
+
+
+
+#### 8.3 외부 Security 파일 등록
+
+* 애플리케이션 실행에 실패한 이유는 **ClientRegistrationRepository**를 생성하려면 **ClientId**와 **ClientSecret**가 필요하기 때문에 에러가 뜬는 것이다.
+* 로컬 PC에서 실행할 때는 application-oauth.properties가 있기 때문에 문제가 없었다. 하지만 이 파일은 **.gitignore로 git에서 제외 대상**이라 깃허브에는 올라가있지 않았다.
+* 애플리케이션을 실행시키기 위해 공개된 저장소에 ClientId와 ClientSecret을 올릴 수 없으니 **서버에서 직접 이 설정들을 가지고 있게** 한다.
+
+
+
+* 먼저 step1이 아닌 app 디렉토리에 properties 파일을 생성한다.
+
+  > vim /home/ec2-user/app/application-oauth.properties
+
+  * 로컬에 있는 application-oauth.properties 파일 내용을 그대로 붙여넣기를 한다.
+
+
+
+* 방금 생성한 application-oauth.properties을 사용하기 위해 deploy.sh 파일을 수정한다.
+
+  ```deploy.sh
+  ...
+  nohup java -jar \
+  	-Dspring.config.location=classpath:/application.properties,/home/ec2-user/app/application-oauth.properties \
+  	$REPOSITORY/$JAR_NAME 2>&1 &
+  ```
+
+  * **-Dspring.config.location**
+    * 스프링 설정 파일 위치를 지정한다.
+    * 기본 옵션들을 담고 있는 application.properties과 OAuth 설정들을 담고 있는 application-oauth.properties의 위치를 지정한다.
+    * classpath가 붙으면 jar 안에 있는 resources 디렉토리를 기준으로 경로가 생성된다.
+    * application-oauth.properties 은 절대경로를 사용한다. 외부에 파일이 있기 때문이다.
+
+
+
+* 수정을 한 후 deploy.sh를 실행시키면 정상적으로 실행되는 것을 확인할 수 있다.
+
+
+
+#### 8.4 스프링 부트 프로젝트로 RDS 접근하기
 
