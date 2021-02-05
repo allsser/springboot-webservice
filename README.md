@@ -4674,3 +4674,5 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 
 * 서버에서 구동될 환경을 하나 구성한다.
+  * **src/main/resources/** 에 **application-real.properties** 파일을 추가한다.
+  * application-real.properties 로 파일을 만들면 **profile=real**인 환경이 구성된다.
