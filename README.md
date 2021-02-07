@@ -4674,5 +4674,145 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 
 * 서버에서 구동될 환경을 하나 구성한다.
+
   * **src/main/resources/** 에 **application-real.properties** 파일을 추가한다.
+
   * application-real.properties 로 파일을 만들면 **profile=real**인 환경이 구성된다.
+
+  * 실제 운영될 환경이기 때문에 보안/로그상 이슈가 될 만한 설정들을 모두 제거하며 **RDS 환경 profile** 설정이 추가된다.
+
+    **application-real.properties**
+
+    ```application-real.properties
+    spring.profiles.include=oauth,real-db
+    spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL57Dialect
+    spring.jpa.properties.hibernate.dialect.storage_engine=innodb
+    spring.datasource.hikari.jdbc-url=jdbc:h2:mem:testdb;MODE=MYSQL
+    spring.datasource.hikari.username=sa
+    
+    spring.session.store-type=jdbc
+    ```
+
+
+
+**EC2 설정**
+
+* **OAuth**와 마찬가지로 RDS 접속 정보도 보호해야 할 정보이니 EC2 서버에 직접 설정 파일을 둔다.
+
+* app 디렉토리에 **application-real-db.properties** 파일을 생성한다.
+
+  > vim ~/app/application-real-db.properties
+
+  ```application-real-db.properties
+  spring.jpa.hibernate.ddl-auto=none
+  spring.jpa.show_sql=false
+  
+  spring.datasource.hikari.jdbc-url=jdbc:mariadb://rds주소:포트명(기본 3306)/database이름
+  spring.datasource.hikari.username=db계정
+  spring.datasource.hikari.password=db계정 비밀번호
+  spring.datasource.hikari.driver-class-name=org.mariadb.jdbc.Driver
+  ```
+
+  * **spring.jpa.hibernate.ddl-auto=none**
+    * JPA로 테이블이 자동 생성되는 옵션을 None(생성하지 않음)으로 지정한다.
+    * RDS에는 실제 운영으로 사용될 테이블이니 절대 스프링 부트에서 새로 만들지 않도록 한다.
+    * 이 옵션을 선택하지 않으면 테이블이 모두 새로 생성될 수 있다.
+    * 주의해야 하는 옵션이다.
+
+
+
+* deploy.sh가 **real profile**을 쓸 수 있도록 개선한다.
+
+  **deploy.sh**
+
+  ```deploy.sh
+  ...
+  nohup java -jar \
+      -Dspring.config.location=classpath:/application.properties,/home/ec2-user/app/application-oauth.properties,/home/ec2-user/app/application-real-db.properties,classpath:/application-real.properties \
+      -Dspring.profiles.active=real \
+      $REPOSITORY/$JAR_NAME 2>&1 &
+  ```
+
+  * **-Dspring.profiles.active=real**
+    * application-real.properties를 활성화 시킨다.
+    * application-real.properties의 spring.profiles.include=oauth,real-db 옵션 때문에 real-db 역시 함께 활성화 대상에 포함된다.
+
+
+
+* deploy.sh를 실행한 후 nohup.out 파일을 열어 로그를 확인해 보면 성공적으로 수행된 것을 확인할 수 있다.
+
+  > Tomcat started on port(s): 8080 (http) with context path ' '
+  >
+  > Started Application in ~~ seconds (JVM running for ~~~)
+
+
+
+* curl 명령어로 html 코드가 정상적으로 보인다면 성공이다.
+
+  > curl localhost:8080
+
+
+
+#### 8.5 EC2에서 소셜 로그인하기
+
+* curl 명령어를 통해 EC2에서 서비스가 잘 배포되는 것을 확인해 볼 수 있다.
+* 브라우저로 확인해 보기 전에 몇 가지 작업을 해야 한다.
+
+
+
+**AWS 보안 그룹 변경**
+
+* EC2에 스프링 부트 프로젝트가 8080 포트로 배포되었으니, 8080 포트가 보안 그룹에 열려 있는지 확인한다.
+
+  ![보안그룹확인](images/보안그룹확인.PNG)
+
+
+
+**AWS EC2 도메인으로 접속**
+
+* 왼쪽 사이드바의 [인스턴스] 메뉴를 클릭한다. 본인이 생성한 EC2 인스턴스를 선택하면 상세 정보에서 **퍼블릭 DNS**를 확인할 수 있다.
+
+  ![탄력적주소](images/탄력적주소.PNG)
+
+
+
+* 퍼블릭 DNS의 주소가 EC2에 자동으로 할당된 **도메인**이다. 인터넷이 되는 장소 어디서나 이 주소를 입력하면 배포한 EC2 서버에 접근할 수 있다.
+
+* 도메인 주소에 8080 포트를 붙여 브라우저에 입력한다.
+
+  ![주소](images/주소.PNG)
+
+
+
+* 현재 서비스에 **EC2의 도메인을 등록하지 않았기 때문**에 구글과 로그인이 작동하지 않는다.
+
+
+
+**구글에 EC2 주소 등록**
+
+* 구글 웹 콘솔(https://console.cloud.google.com/home/dashboard)로 접속하여 본인의 프로젝트로 이동한 다음 **[API 및 서비스 -> 사용자 인증 정보]**로 이동한다.
+
+  ![구글인증정보](images/구글인증정보.PNG)
+
+
+
+* [사용자 인증 정보] 탭으 클릭하여 본인이 등록한 서비스의 이름을 클릭한다.
+
+  ![OAuth클라이언트](images/OAuth클라이언트.PNG)
+
+
+
+* 퍼블릭 DNS 주소에 **:8080/login/oauth2/code/google** 주소를 추가하여 승인된 리디렉션 URI에 등록한다.
+
+  ![인증정보](images/인증정보.PNG)
+
+
+
+* **EC2 DNS** 주소로 이동해서 구글 로그인을 시작하면 로그인이 정상적으로 수행되는 것을 확인할 수 있다.
+
+  ![구글로그인확인](images/구글로그인확인.PNG)
+
+
+
+**네이버에 EC2 주소 등록**
+
