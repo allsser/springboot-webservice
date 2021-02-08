@@ -4951,7 +4951,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
   notifications:		# 4
     email:
       recipients: 
-        - allsser@naver.com
+        - 본인 메일 주소
   ```
 
   * {1} **branches**
@@ -4968,3 +4968,230 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 
 * 코드를 작성했다면, master 브랜치에 커밋과 푸시를 하고, 좀 전의 Travis CI 저장소 페이지를 확인한다.
+
+  ![TravisCI자동싷행](images/TravisCI자동실행.png)
+
+
+
+* 빌드가 성공한 것이 확인되면 .travis.yml에 등록한 이메일을 확인한다.
+
+  ![TravisEmail](images/TravisEmail.PNG)
+
+  * 빌드가 성공했다는 것을 메일로 잘 받은것을 확인할 수 있다.
+
+
+
+#### 9.3 Travis CI와 AWS S3 연동하기
+
+* S3란 AWS에서 제공하는 **일종의 파일 서버**이다.
+* 이미지 파일을 비롯한 정적 파일들을 관리하거나 지금 진행하는 것처럼 배포 파일들을 관리 하는 등의 기능을 지원
+* 보통 이미지 업로드를 구현한다면 S3를 이용하여 구현하는 경우가 많다.
+
+
+
+* 첫 번째 단계로 Travis CI와 S3를 연동한다. 
+
+  * 실제 배포는 **AWS CodeDeploy**라는 서비스를 이용한다. 하지만, S3 연동이 필요한 이유는 **Jar 파일을 전달하기 위해서** 이다.
+
+  * CodeDeploy는 저장 기능이 없다. 그래서 Travis CI가 빌드한 결과물을 받아서 CodeDeploy가 가져갈 수 있도록 보관할 수 있는 공간이 필요하다. 보통은 이럴 때 **AWS S3**를 이용한다.
+
+    > * CodeDeploy가 빌도도 하고 배포도 할 수 있다. CodeDeploy에서는 깃허브 코드를 가져오는 기능을 지원하기 때문이다. 하지만 이렇게 할 때 빌드 없이 배포할 때 대응하기 어렵다.
+    > * 빌드와 배포가 분리되어 있으면 예전에 빌드되어 만들어진 Jar를 재사용하면 되지만, CodeDeploy가 모든 것을 하게 될 땐 항상 빌드를 하게 되니 확장성이 많이 떨어진다. 그래서 웬만하면 빌드와 배포는 분리하는 것이 좋다.
+
+
+
+* Travis CI와 AWS S3 연동 진행
+
+
+
+**AWS Key 발급**
+
+* 일반적으로 AWS 서비스에 **외부 서비스가 접근할 수 없다**. 그러므로 **접근 가능한 권한을 가진 Key**를 생성해서 사용해야 한다.
+
+* AWS서는 이러한 인증 관련된 기능을 제공하는 서비스로 **IAM(Identity and Access Management)**이 있다.
+
+* IAM은 AWS에서 제공하는 서비스의 접근 방식과 권한을 관리한다.  이 IAM을 통해 Travis CI가 AWS S3와 CodeDeploy에 접근할 수 있게 한다.
+
+* IAM 페이지 왼쪽 사이드바에서 **[사용자 -> 사용자 추가]** 버튼을 차례로 클릭한다.
+
+  ![IAM사용자추가](images/IAM사용자추가.PNG)
+
+
+
+* 생성할 사용자의 이름과 엑세스 유형을 선택한다. 엑세스 유형은 **프로그래밍 방식 엑세스**이다.
+
+  ![엑세스유형](images/엑세스유형.PNG)
+
+
+
+* 권한 설정 방식은 3개 중 **[기존 정책 직접 연결]**을 선택한다.
+
+  ![사용자권한설정](images/사용자권한설정.PNG)
+
+  * 화면 아래 정책 검색 화면에서 **s3full**로 검색하여 체크하고 다음 권한으로 **CodeDeployFull**을 검색하여 체크한다.
+
+    ![s3full](images/s3full.png)
+
+    ![codedeployfull](images/codedeployfull.png)
+
+  * 실제 서비스 회사에서는 권한도 **S3와 CodeDeploy를 분리해서 관리**하기도 하지만, 여기서는 간단하게 둘을 합쳐서 관리한다.
+
+
+
+* 태그는 Name 값을 지정하는데, 본인이 인지 가능한 정도의 이름으로 만든다.
+
+  ![태그등록](images/태그등록.PNG)
+
+
+
+* 마지막으로 본인이 생성한 권한 설정 항목을 확인한다.
+
+  ![권한최종확인](images/권한최종확인.png)
+
+
+
+* 최종 생성 완료되면 다음과 같이 엑세스 키와 비밀 엑세스 키가 생성된다. 이 두 값이 **Travis CI에서 사용될 키**이다.
+
+  ![엑세스키확인](images/엑세스키확인.png)
+
+
+
+**Travis CI에 키 등록**
+
+* 먼저 Travis CI의 설정 화면으로 이동한다.
+
+* 설정 화면을 아래로 내리면 **Environment Variables** 항목이 있다.
+
+  ![Travis환경변수](images/Travis환경변수.PNG)
+
+  * 여기에 **AWS_ACCESS_KEY, AWS_SECRET_KEY**를 변수로 해서 IAM 사용자에서 발급받은 키 값들을 등록한다.
+
+    * AWS_ACCESS_KEY : 엑세스 키 ID
+    * AWS_SECRET_KEY : 비밀 엑세스 키
+
+    ![환경변수등록](images/환경변수등록.PNG)
+
+  * 여기에 등록된 값들은 이제 .travis.yml 에서 **$AWS_ACCESS_KEY, $AWS_SECRET_KEY** 란 이름으로 사용할 수 있다.
+
+
+
+**S3 버킷 생성**
+
+* **S3(Simple Storage Service)**에 관해 설정을 한다. AWS의 S3서비스는 일종의 **파일 서버**이다. 순수하게 파일들을 저장하고 접근 권한을 관리, 검색 등을 지원하는 파일 서버의 역할을 한다.
+
+* S3는 보통 게시글을 쓸 때 나오는 첨부파일 등록을 구현할 때 많이 이용한다. 파일 서버의 역할을 하기 때문인데, Travis CI에서 생성된 **Build 파일을 저장**하도록 구성한다.
+
+* S3에 저장된 Build 파일은 이후 AWS의 CodeDeploy에서 배포할 파일로 가져갇도록 구성할 예정이다. 
+
+* AWS서비스에서 S3를 검색하여 이동하고 버킷을 생성한다.
+
+  ![버킷만들기](images/버킷만들기.PNG)
+
+
+
+* 원하는  버킷명을 작성한다. 이 버켓에 **배포할 Zip 파일이 모여있는 장소**임을 의미하도록 짓는 것을 추천한다.
+
+  ![버킷이름](images/버킷이름.PNG)
+
+
+
+* 퍼블릭 액세스를 **모든 차단**을 해야 한다. 현재 프로젝트는 이미 깃허브에 오픈소스로 풀려있으니 문제없지만, 실제 서비스에서 할 때는 Jar 파일이 퍼블릭일 경우 누구나 내려받을 수 있어 코드나 설정값, 주요 키값들이 다 탈취될 수 있다.
+
+* 퍼블릭이 아니더라도 IAM 사용자로 발급받은 키를 사용하니 접근 가능하다. 그러므로 모든 액세스를 차단하는 설정에 체크한다.
+
+  ![퍼블릭엑세스](images/퍼블릭엑세스.png)
+
+
+
+* 버킷이 생성되면 다음과 같이 버킷 목록에서 확인할 수 있다.
+
+  ![버킷생성](images/버킷생성.PNG)
+
+
+
+* S3가 생성되었으니 이제 이 S3로 배포 파일을 전달한다.
+
+
+
+**.travis.yml 추가**
+
+* Travis CI에서 빌드하여 만든 Jar 파일을 S3에 올릴 수 있도록 .travis.yml에 코드를 추가한다.
+
+  ```.travis.yml
+  ...
+  before_deploy:
+    - zip -r springboot2-webservice *
+    - mkdir -p deploy
+    - mv springboot2-webservice.zip deploy/springboot2-webservice.zip
+  
+  deploy:
+    - provider: s3
+      access_key_id: $AWS_ACCESS_KEY # Travis repo settings에 설정된 값
+      secret_access_key: $AWS_SECRET_KEY # Travis repo settings에 설정된 값
+      bucket: allsser-springboot-build # S3 버킷
+      region: ap-northeast-2
+      skip_cleanup: true
+      acl: private # zip 파일 접근을 private으로
+      local_dir: deploy # before_deploy에서 생성된 디렉토리
+      wait-until-deployed: true
+  ...
+  ```
+
+  * 전체 코드는 다음과 같다. Travis CI Settings 항목에서 등록한 **$AWS_ACCESS_KEY, $AWS_SECRET_KEY**가 변수로 사용된다.
+
+  ```.travis.yml
+  language: java
+  jdk:
+    - openjdk8
+  
+  branches:
+    only:
+      - master
+  
+  # Travis CI 서버의 Home
+  cache:
+    directories:
+      - '$HOME/.m2/repository'
+      - '$HOME/.gradle'
+  
+  script: "./gradlew clean build"
+  
+  before_deploy:		# 1
+    - zip -r springboot2-webservice *		# 2
+    - mkdir -p deploy		# 3
+    - mv springboot2-webservice.zip deploy/springboot2-webservice.zip		# 4
+  
+  deploy:		# 5
+    - provider: s3
+      access_key_id: $AWS_ACCESS_KEY # Travis repo settings에 설정된 값
+      secret_access_key: $AWS_SECRET_KEY # Travis repo settings에 설정된 값
+      bucket: allsser-springboot-build # S3 버킷
+      region: ap-northeast-2
+      skip_cleanup: true
+      acl: private # zip 파일 접근을 private으로
+      local_dir: deploy # before_deploy에서 생성된 디렉토리		# 6
+      wait-until-deployed: true
+  
+  # CI 실행 완료 시 메일로 알람
+  notifications:
+    email:
+      recipients:
+        - 본인 메일 주소
+  ```
+
+  * {1} **before_deploy**
+    * deploy 명령어가 실행되기 전에 수행된다.
+    * CodeDeploy는 **Jar 파일은 인식하지 못하므로** Jar+기타 설정 파일들을 모아 압축(zip)한다.
+  * {2} **zip -r springboot2-webservice**
+    * 현재 위치의 모든 파일을 springboot2-webservice 이름으로 압축(zip)한다.
+    * 명령어의 마지막 위치는 본인의 프로젝트 이름이어야 한다.
+  * {3} **mkdir -p deploy**
+    * deploy라는 디렉토리를 Travis CI가 실행 중인 위치에서 생성한다.
+  * {4} **mv springboot2-webservice.zip deploy/springboot2-webserivce.zip**
+    * springboot2-webserivce.zip 파일을 deploy/springboot2-webservice.zip으로 이동시킨다.
+  * {5} **deploy**
+    * S3로 파일 업로드 혹은 CodeDeploy로 배포 등 **외부 서비스와 연동될 행위들을 선언**한다.
+  * {6} **local_dir: deploy**
+    * 앞에서 생성한 deploy 디렉토리를 지정한다.
+    * **해당 위치의 파일들만** S3로 전송한다.
+
