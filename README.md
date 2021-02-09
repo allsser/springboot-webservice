@@ -5195,3 +5195,120 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
     * 앞에서 생성한 deploy 디렉토리를 지정한다.
     * **해당 위치의 파일들만** S3로 전송한다.
 
+
+
+* 설정이 다 되었으면 **깃허브로 푸시**한다. Travis CI에서 자동으로 빌드가 진행되는 것을 확인하고, 모든 빌드가 성공하는지 확인한다.
+
+* 다름 로그가 나온다면 Travis CI의 빌드가 성공한 것이다.
+
+  > ```
+  > Installing deploy dependencies
+  > 1301Logging in with Access Key: ****************YTXP
+  > Beginning upload of 1 files with 5 threads.
+  > Preparing deploy
+  > Deploying application
+  > Done. Your build exited with 0.
+  > ```
+
+
+
+*  S3 버킷을 가보면 업로드가 성공한 것을 확인할 수 있다.
+
+  ![S3업로드](images/S3업로드.PNG)
+
+
+
+* Travis CI를 통해 자동으로 파일이 올려진 것을 확인할 수 있다.
+* Travis CI와 S3 연동되었다. 이제 CodeDeploy로 배포까지 완료해 본다.
+
+
+
+#### 9.4 Travis CI와 AWS S3, CodeDeploy 연동하기
+
+* AWS의 배포 시스템인 CodeDeploy를 이용하기 전에 배포 대상인 **EC2가 CodeDeploy를 연동 받을 수 있게 IAM** 역할을 하나 생성한다.
+
+
+
+**EC2에 IAM 역할 추가하기**
+
+* S3와 마찬가지로 IAM을 검색하고, [역할] 탭을 클릭해서 이동한다. [역할 -> 역할 만들기] 버튼을 차례로 클릭한다.
+
+  ![역할만들기](images/역할만들기.png)
+
+  * 앞에서 만들었던 **IAM의** 사용자와 역할은 어떤 차이가 있는가?
+    * 역할
+      * AWS 서비스에만 할당할 수 있는 권한
+      * EC2, CodeDeploy, SQL 등
+    * 사용자
+      * **AWS 서비스 외**에 사용할 수 있는 권한
+      * 로컬 PC, IDC 서버 등
+
+
+
+* 지금 만들 권한은 **EC2에서 사용할 것**이기 때문에 사용자가 아닌 역할로 처리한다.
+
+* 서비스 서택에서는 [AWS 서비스 -> EC2]를 차례로 선택한다.
+
+  ![서비스선택](images/서비스선택.png)
+
+
+
+* 정책에선 **EC2RoleForA**를 검색하여 **AmazoneEC2RoleforAWS-CodeDeploy**를 선택한다.
+
+  ![정책선택](images/정책선택.png)
+
+
+
+* 태그는 본인이 원하는 이름으로 짓는다.
+
+  ![태그등록role](images/태그등록role.png)
+
+
+
+* 마지막으로 역할의 이름을 등록하고 나머지 등록 정보를 최종적으로 확인한다.
+
+  ![최종확인](images/최종확인.png)
+
+
+
+* 이렇게 만든 역할을 EC2 서비스에 등록한다.
+
+* EC2 인스턴스 목록으로 이동한 뒤, 본인의 인스턴스를 마우스 버튼으로 눌러 [보안 -> IAM 역할 수정]를 차례로 선택한다.
+
+  ![IAM역할변경](images/IAM역할변경.png)
+
+
+
+* 방금 생성한 역할을 선택한다.
+
+  ![IAM역할선택](images/IAM역할선택.png)
+
+
+
+* 역할 선택이 완료되면 해당 EC2 인스턴스를 재부팅한다. 재부팅을 해야만 역할이 정상적으로 적용되니 꼭 한 번은 재부팅해준다.
+
+  ![인스턴스재부팅](images/인스턴스재부팅.png)
+
+
+
+* 재부팅이 완료되면 CodeDeploy의 요청을 받을 수 있게 에이전트를 하나 설치한다.
+
+
+
+**CodeDeploy 에이전트 설치**
+
+* EC2에 접속해서 명령어를 입력한다.
+
+  > aws s3 cp s3://aws-codedeploy-ap-northeast-2/latest/install . --region ap-northeast-2
+
+* 내려받기가 성공했다면 다음과 같은 메시지가 콘솔에 출력된다.
+
+  > download: s3://aws-codedeploy-ap-northeast-2/latest/install to ./install
+
+* install 파일에 실행 권한이 없으니 실행 권한을 추가한다.
+
+  > chmod +x ./install
+
+* install 파일로 설치를 진행한다.
+
+  > sudo ./install auto
