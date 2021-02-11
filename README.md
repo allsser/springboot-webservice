@@ -5312,3 +5312,6 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 * install 파일로 설치를 진행한다.
 
   > sudo ./install auto
+  > 
+> 
+> ING
