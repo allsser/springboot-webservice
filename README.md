@@ -5312,6 +5312,192 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 * install 파일로 설치를 진행한다.
 
   > sudo ./install auto
-  > 
-> 
-> ING
+  
+  * 만약 설치 중에 다음과 같은 에러가 발생한다면 루비라는 언어가 설치가 안 된 상태라서 그렇다.
+  * /usr/bin/env:ruby:No such file or directory
+  * 이럴 경우 yum install 로 루비를 설치하면 된다.
+  * **sudo yum install ruby**
+  
+* 설치가 끝났으면 **Agent**가 정상적으로 실행되고 있는지 상태를 검사를 한다.
+
+  > sudo service codedeploy-agent status
+
+* 다음과 같이 running 메시지가 출력되면 정상이다.
+
+  > The AWS CodeDeploy agent is running as PID xxx
+
+
+
+**CodeDeploy를 위한 권한 생성**
+
+* CodeDeploy에서 EC2에 접근하려면 마찬가지로 권한이 필요하다.
+
+* WAS의 서비스이니 IAM 역할을 생성한다.
+
+* 서비스는 [AWS 서비스 -> CodeDeploy]를 차례로 선택한다.
+
+  * 앞에서 [EC2에 IAM 역할 추가하기](#EC2에 IAM 역할 추가하기) 했던 것처럼 IAM에서 역할 만들기로 추가해 준다.
+
+  ![codedeploy서비스선택](images/codedeploy서비스선택.png)
+
+
+
+* CodeDeploy는 권한이 하나뿐이라서 선택 없이 바로 다음으로 넘어가면 된다.
+
+  ![codedeploy권한선택](images/codedeploy권한선택.png)
+
+
+
+* 태그는 원하는 이름으로 짓는다.
+
+  ![codedeploy태그등록](images/codedeploy태그등록.png)
+
+
+
+* CodeDeploy를 위한 역할 이름과 선택 항목들을 확인한 뒤 생성 완료를 한다.
+
+  ![codedeploy생성완료](images/codedeploy생성완료.png)
+
+
+
+**CodeDeploy 생성**
+
+* CodeDeploy는 AWS의 배포 삼형제 중 하나이다. 배포 삼형제에 대하 간단하게 소개하면 다음과 같다.
+  * **Code Commit**
+    * 깃허브와 같은 코드 저장소의 역할을 한다.
+    * 프라이빗 기능을 지원한다는 강점이 있지만, 현재 **깃허브에서 무료로 프라이빗 지원**을 하고 있어서 거의 사용하지 않는다.
+  * **Code Build**
+    * Travis CI와 마찬가지로 **빌드용 서비스**이다.
+    * 멀티 모듈을 배포해야 하는 경우 사용해 볼만하지만, 규모가 있는 서비스에서는 대부분 **젠킨스/팀시티 등을 이용**하니 이것 역시 사용할 일이 거의 없다.
+  * **CodeDeploy**
+    * AWS의 배포 서비스이다.
+    * 앞에서 언급한 다른 서비스들은 대체재가 있고, 딱히 대체재보다 나은 점이 없지만, CodeDeploy는 **대체재가 없다.**
+    * 오토 스케일링 그룹 배포, 블루 그린 배포, 롤링 배포, EC2 단독 배포 등 많은 기능을 지원한다.
+
+* 이 중에서 현재 진행 중인 프로젝트에서는 Code Commit의 역할은 **깃허브**가, Code Build의 역할은 **Travis CI**가 하고 있다. 그래서 추가로 사용할 서비스는 CodeDeploy이다.
+
+
+
+* CodeDeploy 서비스로 이동해서 화면 중앙에 있는 [애플리케이션 생성] 버튼을 클릭한다.
+
+  ![codedeploy생성버튼](images/codedeploy생성버튼.png)
+
+
+
+* 생성할 CodeDeploy의 이름과 컴퓨팅 플랫폼을 선택한다. 컴퓨팅 플랫폼에선 [EC2/온프레미스]를 선택하면 된다.
+
+  ![codedeploy구성선택](images/codedeploy구성선택.png)
+
+
+
+* 생성이 완료되면 배포 그룹을 생성하라는 메시지를 볼 수 있다. 화면 중앙의 [배포 그룹 생성] 버튼을 클릭한다.
+
+  ![배포그룹생성](images/배포그룹생성.png)
+
+
+
+* 배포 그룹 이름과 서비스 역할을 등록한다. 서비스 역할은 좀 전에 생성한 CodeDeploy용 IAM 역할을 선택하면 된다.
+
+  ![권한선택](images/권한선택.png)
+
+
+
+* 배포 유형에서는 **현재 위치**를 선택한다.
+
+* 본인이 배포할 서비스가 2대 이상이라면 **블루/그린**을 선택하면 된다. 현재는 1대의 EC2에만 배포하므로 선택하지 않는다.
+
+  ![배포이름](images/배포이름.png)
+
+
+
+* 환경 구성에서는 [Amazone EC2 인스턴스]에 체크한다.
+
+  ![환경구성](images/환경구성.png)
+
+
+
+* 다음과 같이 배포 구성을 선택하고 로드밸런싱은 체크 해제한다.
+
+  ![배포설정](images/배포설정.png)
+
+  * **배포 구성**이란 한번 배포할 때 몇대의 서버에 배포할지를 결정한다. 2대 이상이라면 1대씩 배포할지, 30% 혹은 50%로 나눠서 배포할지 등등 여러 옵션을 선택하겠지만, 1대 서버다 보니 전체 배포하는 옵션으로 선택하면 된다.
+    * CodeDeployDefault.AllAtOnce는 한 번에 배포하는 것을 의미한다.
+
+
+
+**Travis CI, S3, CodeDeploy 연동**
+
+* 먼저 S3에서 넘겨줄 zip 파일을 저장할 디렉토리를 하나 생성한다. EC2 서버에 접속해서 다음과 같이 디렉토리를 생성한다.
+
+  > mkdir ~/app/step2 && mkdir ~/app/step2/zip
+
+  * && 옵션이 있으면 연속해서 명령어를 사용할 수 있다.
+
+
+
+* Travis CI의 Build가 끝나면 S3에 zip 파일이 전송되고, 이 zip 파일은 **/home/ec2-user/app/step2/zip**로 복사되어 풀 예정이다.
+
+* Travis CI로 설정은 **.travis.yml로 진행**했다.
+
+* AWS CodeDeploy의 설정은 **appspec.yml로 진행**한다.
+
+  ![appspec](images/appspec.png)
+
+  * 코드는 다음과 같다.
+
+  **appspec.yml**
+
+  ```appspec.yml
+  version: 0.0	# {1}
+  os: linux
+  files:
+    - source: /	# {2}
+      destination: /home/ec2-user/app/step2/zip/	# {3}
+      overwrite: yes	# {4}
+  ```
+
+  * {1} **version: 0.0**
+    * **CodeDeploy 버전**을 이야기 한다.
+    * 프로젝트 버전이 아니므로 0.0 외에 다른 버전을 사용하면 오류가 발생한다.
+  * {2} **source**
+    * CodeDeploy에서 전달해 준 파일 중 destination으로 이동시킬 대상을 지정한다.
+    * 루트 경로( / )를 지정하면 전체 파일을 이야기한다.
+  * {3} **destination**
+    * source에서 지정한 파일을 받을 위치이다.
+    * 이후 Jar를 실행하는 등은 destination에서 옮긴 파일들로 진행된다.
+  * {4} **overwrite**
+    * 기존에 파일들이 있으면 덮어쓸지를 결정한다.
+    * 현재 yes라고 했으니 파일들을 덮어쓰게 된다.
+
+
+
+* **.travis.yml**에도 CodeDeploy 내용을 추가해준다. deploy 항목에 다음 코드를 추가한다.
+
+  **.tr**
+
+  **avis.yml**
+
+  ```.travis.yml
+  deploy:
+  	...
+  	
+    - provider: codedeploy
+      access_key_id: $AWS_ACCESS_KEY # Travis repo settings에 설정된 값
+      secret_access_key: $AWS_SECRET_KEY # Travis repo settings에 설정된 값
+      bucket: allsser-springboot-build # S3 버킷
+      key: allsser-springboot2-webservice.zip # 빌드 파일을 압축해서 전달
+      builde_type: zip # 압축 확장자
+      application: allsser-springboot2-webservice # 웹 콘솔에서 등록한 CodeDeploy 애플리케이션
+      deployment_group: allsser-springboot2-webservice # 웹 콘솔에서 등록한 CodeDeploy 배포 그룹
+      region: ap-northeast-2
+      skip_cleanup: true
+      wait-until-deployed: true
+  ```
+
+  * S3 옵션과 유사하다. 다른 부분은 CodeDeploy의 애플리케이션 이름과 배포 그룹명을 지정하는 것이다.
+
+
+
+* 모든 내용을 작성했다면 프로젝트를 커밋하고 푸시한다. 깃허브로 푸시가 되면 Travis CI가 자동으로 시작된다.
+* Travis CI가 끝나면 CodeDeploy 화면 아래에서 배포가 수행되는 것을 확인할 수 있다.
+
