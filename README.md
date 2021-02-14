@@ -5490,11 +5490,10 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
       application: allsser-springboot2-webservice # 웹 콘솔에서 등록한 CodeDeploy 애플리케이션
       deployment_group: allsser-springboot2-webservice # 웹 콘솔에서 등록한 CodeDeploy 배포 그룹
       region: ap-northeast-2
-      skip_cleanup: true
       wait-until-deployed: true
   ```
-
-  * S3 옵션과 유사하다. 다른 부분은 CodeDeploy의 애플리케이션 이름과 배포 그룹명을 지정하는 것이다.
+  
+* S3 옵션과 유사하다. 다른 부분은 CodeDeploy의 애플리케이션 이름과 배포 그룹명을 지정하는 것이다.
 
 
 
