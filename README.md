@@ -5486,7 +5486,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
       secret_access_key: $AWS_SECRET_KEY # Travis repo settings에 설정된 값
       bucket: allsser-springboot-build # S3 버킷
       key: allsser-springboot2-webservice.zip # 빌드 파일을 압축해서 전달
-      builde_type: zip # 압축 확장자
+      bundle_type: zip # 압축 확장자
       application: allsser-springboot2-webservice # 웹 콘솔에서 등록한 CodeDeploy 애플리케이션
       deployment_group: allsser-springboot2-webservice # 웹 콘솔에서 등록한 CodeDeploy 배포 그룹
       region: ap-northeast-2
