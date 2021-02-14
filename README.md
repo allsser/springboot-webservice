@@ -5485,7 +5485,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
       access_key_id: $AWS_ACCESS_KEY # Travis repo settings에 설정된 값
       secret_access_key: $AWS_SECRET_KEY # Travis repo settings에 설정된 값
       bucket: allsser-springboot-build # S3 버킷
-      key: allsser-springboot2-webservice.zip # 빌드 파일을 압축해서 전달
+      key: springboot2-webservice.zip # 빌드 파일을 압축해서 전달
       bundle_type: zip # 압축 확장자
       application: allsser-springboot2-webservice # 웹 콘솔에서 등록한 CodeDeploy 애플리케이션
       deployment_group: allsser-springboot2-webservice # 웹 콘솔에서 등록한 CodeDeploy 배포 그룹
@@ -5498,5 +5498,160 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 
 * 모든 내용을 작성했다면 프로젝트를 커밋하고 푸시한다. 깃허브로 푸시가 되면 Travis CI가 자동으로 시작된다.
+
 * Travis CI가 끝나면 CodeDeploy 화면 아래에서 배포가 수행되는 것을 확인할 수 있다.
 
+  ![codedeploy진행중](images/codedeploy진행중.png)
+
+
+
+* 배포가 끝났다면 다음 명령어로 파일들이 잘 도착했는지 확인한다.
+
+  > cd /home/ec2-user/app/step2/zip
+
+* 파일 목록을 확인해 보면 프로젝트 파일들이 잘 도착한 것을 확인할 수 있다.
+
+  ![zip](images/zip.png)
+
+
+
+* Travis CI와 S3, CodeDeploy가 연동이 완료되었다.
+
+
+
+#### 9.5 배포 자동화 구성
+
+* 앞의 과정으로 **Travis CI, S3, CodeDeploy 연동**까지 구현되었다.
+* 이제 이것을 기반으로 실제 **Jar를 배포하여 실행까지** 한다.
+
+
+
+**deploy.sh 파일 추가**
+
+* step2 환경에서 실행될 deploy.sh를 생성한다. **scripts 디렉토리**를 생성해서 여기에 스크립트를 생성한다.
+
+  ![deploy위치](images/deploy위치.png)
+
+  ```deploy.sh
+  #!/bin/bash
+  
+  REPOSITORY=/home/ec2-user/app/step2
+  PROJECT_NAME=springboot-webservice
+  
+  echo "> Build 파일 복사"
+  
+  cp $REPOSITORY/zip/*.jar $REPOSITORY/
+  
+  echo "> 현재 구동 중인 애플리케이션 pid 확인"
+  
+  CURRENT_PID=$(pgrep -fl ${PROJECT_NAME} | grep jar | awk '{print $1}')		# {1}
+  
+  echo "> 현재 구동 중인 애플리케이션 pid: $CURRENT_PID"
+  
+  if [ -z "$CURRENT_PID" ]; then
+    echo "> 현재 구동 중인 애플리케이션이 없으므로 종료하지 않습니다."
+  else
+    echo "> kill -15 $CURRENT_PID"
+    kill -15 $CURRENT_PID
+    sleep 5
+  fi
+  
+  echo "> 새 애플리케이션 배포"
+  
+  JAR_NAME=$(ls -tr $REPOSITORY/*.jar | tail -n 1)
+  
+  echo "> JAR_NAME: $JAR_NAME"
+  
+  echo "> $JAR_NAME 에 실행권한 추가"
+  
+  chmod +x $JAR_NAME		# {2}
+  
+  echo "> $JAR_NAME 실행"
+  
+  nohup java -jar \
+    -Dspring.config.location=classpath:/application.properties,classpath:/application-real.properties,/home/ec2-user/app/application-oauth.properties,/home/ec2-user/app/application-oauth.properties,/home/ec2-user/app/application-real-db.properties \
+    -Dspring.profiles.active=real \
+    $JAR_NAME > $REPOSITORY/nohup.out 2>&1 &		# {3}
+  ```
+
+  * {1} **CURRENT_PID**
+    * 현재 수행 중인 스프링 부트 애플리케이션의 프로세스 ID를 찾는다.
+    * 실행 중이면 종료하기 위해서이다.
+    * 스프링 부트 애플리케이션 이름(springboot-webservice)으로 된 다른 프로그램들이 있을 수 있어 springboot-webservice로 된 jar(pgrep -fl springboot-webservice | grep jar) 프로세스를 찾은 뒤 ID를 찾는다.(| awk '{print $1}')
+  * {2} **chmod +x $JAR_NAME**
+    * Jar 파일은 실행 권한이 없는 상태이다.
+    * nohup으로 실행할 수 있게 실행 권한을 부여한다.
+  * {3} **$JAR_NAME > $REPOSITORY/nohup.out 2>&1 &**
+    * nohup 실행 시 CodeDeploy는 **무한 대기 한다.**
+    * 이 이슈를 해결하기 위해 nohup.out 파일을 표준 입출용으로 별도로 사용한다.
+    * 이렇게 하지 않으면 nohup.out 파일이 생기지 않고, **CodeDeploy 로그에 표준 입출력이 출력된다.**
+    * nohup이 끝나기 전까지 CodeDeploy도 끝나지 않으니 꼭 이렇게 해야 한다.
+
+
+
+* step1에서 작성된 deploy.sh와 크게 다르지 않다.
+* **git pull**을 통해 **직접 빌드했던 부분을 제거**했다. 그리고 Jar를 실행하는 단계에서 몇가지 코드가 추가되었다.
+  * 플러그인 중 BashSupport를 설치하면 .sh파일 편집 시 도움을 받을 수 있다.
+
+
+
+**.tarvis.yml 파일 수정**
+
+* 현재 프로젝트의 모든 파일은 zip 파일로 만드는데, 실제로 필요한 파일들은 **Jar, appspec.yml, 배포를 위한 스크립트**들이다. 이 외 나머지는 배포에 필요하지 않으니 포함하지 않는다.
+
+* 그렇기 때문에 **.travis.yml** 파일의 **before_deploy**를 수정한다.
+
+  > .travis.yml 파일은 Travis CI에서만 필요하지 CodeDeploy에서 필요하진 않는다.
+
+  **.travis.yml**
+
+  ```.travis.yml
+  before_deploy:
+    - mkdir -p before-deploy # zip에 포함시킬 파일들을 담을 디렉토리 생성 	# {1}
+    - cp scripts/*.sh before-deploy/ 	# {2}
+    - cp appspec.yml before-deploy/
+    - cp build/libs/*.jar before-deploy/
+    - cd before-deploy && zip -r before-deploy * # before-deploy로 이동 후 전체 압축	#{3}
+    - cd ../ && mkdir -p deploy # 상위 디렉토리로 이동 후 deploy 디렉토리 생성
+    - mv before-deploy/before-deploy.zip deploy/springboot-webservice.zip # deploy로 zip파일 이동
+  ```
+
+  * {1} **Travis CI는 S3로 특정 파일만 업로드가 안된다.**
+    * 디렉토리 단위로만 업로드할 수 있기 때문에 before-deploy 디렉토리는 항상 생성한다.
+  * {2} **before-deploy에는 zip 파일에 포함시킬 파일들을 저장한다.**
+  * {3} **zip -r 명령어를 통해 before-deploy 디렉토리 전체 파일을 압축한다.**
+
+
+
+* CodeDeploy의 명령을 담당할 appspec.yml 파일을 수정한다.
+
+
+
+**appspec.yml 파일 수정**
+
+* appspec.yml 파일에 다음 코드를 추가한다. 
+
+* location, timeout, runas의 들쓰기를 주의해야 한다. 들여쓰기가 잘못된 경우 배포가 실패한다.
+
+  **appspec.yml**
+
+  ```appspec.yml
+  permissions:	# {1}
+    - object: /
+      pattern: "**"
+      owner: ec2-user
+      group: ec2-user
+      
+  hooks:		# {2}
+    ApplicationStart:
+      - location: deploy.sh
+        timeout: 60
+        runas: ec2-user
+  ```
+
+  * {1} **permissions**
+    * CodeDeploy에서 EC2 서버로 넘겨준 파일들을 모두 ec2-user 권한을 갖도록 한다.
+  * {2} **hooks**
+    * CodeDeploy 배포 단계에서 실행할 명령어를 지정한다.
+    * ApplicationStart라는 단계에서 deploy.sh를 ec2-user 권한으로 실행하게 한다.
+    * timeout: 60 으로 스크립트 실행 60초 이상 수행되면 실패가 된다.(무한정 기다릴 수 없으니 시간 제한을 둔다.)
