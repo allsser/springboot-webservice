@@ -1,5 +1,5 @@
 language: java
-jdk:머리쿵
+jdk:
   - openjdk8
 
 branches:
