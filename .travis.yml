@@ -17,7 +17,7 @@ script: "./gradlew clean build"
 before_deploy:
   - zip -r allsser-springboot2-webservice *
   - mkdir -p deploy
-  - mv allsser-springboot2-webservice.zip delpoy/allsser-springboot2-webservice.zip
+  - mv allsser-springboot2-webservice.zip deploy/allsser-springboot2-webservice.zip
 
 deploy:
   - provider: s3
