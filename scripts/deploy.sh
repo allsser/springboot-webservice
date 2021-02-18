@@ -1,7 +1,7 @@
 #!/bin/bash
 
 REPOSITORY=/home/ec2-user/app/step2
-PROJECT_NAME=springboot-webservic
+PROJECT_NAME=SpringBoot
 
 echo "> Build 파일 복사"
 
@@ -9,7 +9,7 @@ cp $REPOSITORY/zip/*.jar $REPOSITORY/
 
 echo "> 현재 구동 중인 애플리케이션 pid 확인"
 
-CURRENT_PID=$(pgrep -fl springboot-webservic | grep java | awk '{print $1}')
+CURRENT_PID=$(pgrep -fl SpringBoot | grep java | awk '{print $1}')
 
 echo "> 현재 구동 중인 애플리케이션 pid: $CURRENT_PID"
 
