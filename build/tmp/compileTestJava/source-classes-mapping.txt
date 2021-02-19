@@ -8,3 +8,7 @@ com/allsser/book/springboot/web/HelloControllerTest.java
  com.allsser.book.springboot.web.HelloControllerTest
 com/allsser/book/springboot/web/IndexControllerTeset.java
  com.allsser.book.springboot.web.IndexControllerTeset
+com/allsser/book/springboot/web/HelloControllerTest.java
+ com.allsser.book.springboot.web.HelloControllerTest
+com/allsser/book/springboot/web/IndexControllerTeset.java
+ com.allsser.book.springboot.web.IndexControllerTeset
