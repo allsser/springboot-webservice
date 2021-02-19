@@ -4899,7 +4899,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 **Travis CI 웹 서비스 설정**
 
-* https://travis-ci.org/ 에서 깃허브 계정으로 로그인을 한 뒤, 오른쪽 위에 [계정명 -> Settings]를 클릭한다.
+* https://travis-ci.com/ 에서 깃허브 계정으로 로그인을 한 뒤, 오른쪽 위에 [계정명 -> Settings]를 클릭한다.
 
 * 설정 페이지 아래쪽을 보면 깃허브 저장소 검색창이 있다. 여기서 저장소 이름을 입력해서 찾은 다음, 오른쪽의 상태바를 활성화시킨다.
 
@@ -5473,12 +5473,10 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 * **.travis.yml**에도 CodeDeploy 내용을 추가해준다. deploy 항목에 다음 코드를 추가한다.
 
-  **.tr**
-
-  **avis.yml**
+  **.travis.yml**
 
   ```.travis.yml
-  deploy:
+deploy:
   	...
   	
     - provider: codedeploy
@@ -5536,7 +5534,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
   #!/bin/bash
   
   REPOSITORY=/home/ec2-user/app/step2
-  PROJECT_NAME=springboot-webservice
+  PROJECT_NAME=SpringBoot		# {1}
   
   echo "> Build 파일 복사"
   
@@ -5544,7 +5542,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
   
   echo "> 현재 구동 중인 애플리케이션 pid 확인"
   
-  CURRENT_PID=$(pgrep -fl ${PROJECT_NAME} | grep jar | awk '{print $1}')		# {1}
+  CURRENT_PID=$(pgrep -fl ${PROJECT_NAME} | grep java | awk '{print $1}')		# {2}
   
   echo "> 현재 구동 중인 애플리케이션 pid: $CURRENT_PID"
   
@@ -5564,24 +5562,35 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
   
   echo "> $JAR_NAME 에 실행권한 추가"
   
-  chmod +x $JAR_NAME		# {2}
+  chmod +x $JAR_NAME		# {3}
   
   echo "> $JAR_NAME 실행"
   
   nohup java -jar \
-    -Dspring.config.location=classpath:/application.properties,classpath:/application-real.properties,/home/ec2-user/app/application-oauth.properties,/home/ec2-user/app/application-oauth.properties,/home/ec2-user/app/application-real-db.properties \
+    -Dspring.config.location=classpath:/application.properties,classpath:/application-real.properties,/home/ec2-user/app/application-oauth.properties,/home/ec2-user/app/application-real-db.properties \
     -Dspring.profiles.active=real \
-    $JAR_NAME > $REPOSITORY/nohup.out 2>&1 &		# {3}
+    $JAR_NAME > $REPOSITORY/nohup.out 2>&1 &		# {4}
   ```
 
-  * {1} **CURRENT_PID**
+  * {1} **PROJECT_NAME=SpringBoot**
+
+    * 처음 파일명을 **SpringBoot&AWS** 지정하였더니 PORJECT_NAME 인식을 **SpringBoot** 로 인식한다.
+
+    * 파일명인 SpringBoot&AWS로 인식하는 것이 아닌 SpringBoot로 인식하는 이유는 리눅스에서 특수 문자인 **&** 를 인식하지 못하여 특수 문자 앞에 까지만 인식하기 때문에 **SpringBoot** 로 지정된다.
+
+      > 리눅스에서 파일명에 특수 문자가 들어가 있는 경우 특수 문자를 인식하기 위해서 ' ' 처리를 해준다.
+      >
+      > **SpringBoot'&'AWS** 를 입력하면 특수 문자까지 인식하여 SpringBoot&AWS 로 인식한다.
+
+  * {2} **CURRENT_PID**
     * 현재 수행 중인 스프링 부트 애플리케이션의 프로세스 ID를 찾는다.
     * 실행 중이면 종료하기 위해서이다.
-    * 스프링 부트 애플리케이션 이름(springboot-webservice)으로 된 다른 프로그램들이 있을 수 있어 springboot-webservice로 된 jar(pgrep -fl springboot-webservice | grep jar) 프로세스를 찾은 뒤 ID를 찾는다.(| awk '{print $1}')
-  * {2} **chmod +x $JAR_NAME**
+    * 스프링 부트 애플리케이션 이름(SpringBoot)으로 된 다른 프로그램들이 있을 수 있어 SpringBoot로 된 jar(pgrep -fl SpringBoot | grep java) 프로세스를 찾은 뒤 ID를 찾는다.( **| awk '{print $1}'** )
+    * CURRENT_PID의 프로세스 ID를 저장 못시켜 줄 경우 배포를 했을 때 기존의 프로세스를 종료시켜 주지 못하여 제대로 배포가 안된다. 8080 포트가 계속 쓰이고 있어서 배포 불가능 -> 오류 발생
+  * {3} **chmod +x $JAR_NAME**
     * Jar 파일은 실행 권한이 없는 상태이다.
     * nohup으로 실행할 수 있게 실행 권한을 부여한다.
-  * {3} **$JAR_NAME > $REPOSITORY/nohup.out 2>&1 &**
+  * {4} **$JAR_NAME > $REPOSITORY/nohup.out 2>&1 &**
     * nohup 실행 시 CodeDeploy는 **무한 대기 한다.**
     * 이 이슈를 해결하기 위해 nohup.out 파일을 표준 입출용으로 별도로 사용한다.
     * 이렇게 하지 않으면 nohup.out 파일이 생기지 않고, **CodeDeploy 로그에 표준 입출력이 출력된다.**
@@ -5659,3 +5668,93 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
 
 
 * 모든 설정이 완료되었으니 깃허브로 커밋과 푸시를 한다. Travis CI에서 성공 메시지를 확인하고 CodeDeploy에서도 배포가 성공한 것을 확인한다.
+
+
+
+**실제 배포 과정**
+
+* Build.gradle에서 프로젝트 버전을 변경한다.
+
+  > Version '1.0.2-SNAPSHOT'
+
+* 변경된 내용을 알 수 있게 src/main/resources/templates/**index.mustache** 내용에 텍스트 수정을 해준다.
+
+  ```index.mustache
+  ...
+  <h1>스프링 부트로 시작하는 웹 서비스 Ver.12</h1>
+  ...
+  ```
+
+* 위에서 배포 전에 코드를 테스트하여 에러가 있는지 확인할 수 있다. 테스트 코드가 에러가 있는 상태에서 배포를 하면 배포가 안된다. 테스트 코드까지 통과를 시켜준 후에 배포를 해준다.
+
+* 깃허브로 커밋과 푸시를 한다. 그럼 **변경된 코드가 배포** 된 것을 확인할 수 있다.
+
+  ![배포완료](images/배포완료.png)
+
+  * 신규 버전이 정상적으로 배포되는 것을 확인할 수 있다.
+
+
+
+#### 9.6 CodeDeploy 로그 확인
+
+* CodeDeployd와 같이 AWS가 지원하는 서비스에서 오류가 발생 했을때 배포가 실패한 오류를 보기 위해서 로그를 확인한다.
+
+* CodeDeploy에 관한 대부분의 내용은 **/opt/codedeploy-agent/deployment-root** 에 있다. 해당 디렉토리로 이동(cd /opt/codedeploy-agent/deployment-root)한 뒤 목록을 확인해 보면 다음과 같은 내용을 확인할 수 있다. 
+
+  ![deployment-root](images/deployment-root.png)
+
+  * **최상단의 영문과 대시( - )가 있는 디렉토리명은 CodeDeploy ID 이다.**
+    * 사용자마다 고유한 ID가 생성되어 각자 다른 ID가 발급되니 본인의 서버에는 다른 코드로 되어있다.
+    * 해당 디렉토리로 들어가 보면 **배포한 단위별로 배포 파일들이** 있다.
+  * **/opt/codedeploy-agent/deployment-root/deployment-logs/codedeploy-agent-deployments.log**
+    * CodeDeploy 로그 파일이다.
+    * CodeDeploy로 이루어지는 배포 내용 중 표준 입/출력 내용은 모두 여기에 담겨 있다.
+    * 작성한 echo 내용도 모두 표기된다.
+
+
+
+* 테스트, 빌드, 배포까지 전부 자동화되었다.
+* 작업이 끝난 내용을 **Master 브랜치에 푸시만 하면 자동으로 EC2에 배포** 가 된다.
+* 문제는 **배포하는 동안** 스프링 부트 프로젝트는 종료 상태가 되어 **서비스를 이용할 수 없다** 는 것이다.
+
+
+
+----
+
+### 10. 24시간 365일 중간 없는 서비스 만들기
+
+* 배포하는 동안 애플리케이션이 종료된다는 문제가 있다.
+
+* **새로운 Jar가 실행되기 전까지 기존 Jar를 종료시켜 놓기 때문에** 서비스가 중단된다.
+
+
+
+#### 10.1 무중단 배포 소개
+
+* 서비스를 정지하지 않고 배포하는 것을 **무중단 배포** 라고 한다. 무중단 배포 방식에는 몇가지 방식이 있다.
+  * AWS에서 블루 그린(Blue-Green) 무중단 배포
+  * 도커를 이용한 웹 서비스 무중단 배포
+  * **L4 스위치** 를 이용한 무중단 배포 방법도 있지만, L4가 워낙 고가의 장비이다 보니 대형 인터넷 기업 외에는 쓸 일이 거의 없다.
+
+
+
+* **엔진엑스(Nginx)** 를 이용한 무중단 배포를 한다.
+  * 엔진엑스는 웹 서버, 리버스 프록시, 캐싱, 로드 밸런싱, 미디어 스트리밍 등을 위한 오픈소스 소프트웨어이다.
+  * 이전에 아파치가 대세였던 자리를 완전히 빼앗은 가장 유명한 웹서버이자 오픈소스이다. 고성능 웹서버이기 때문에 대부분의 서비스들이 현재는 엔진엑스를 사용하고 있다.
+* 엔진엑스가 가지고 있는 여러 기능 중 **리버스 프록시** 가 있다.
+  * 리버스 프록시란 엔진엑스가 **외부의 요청을 받아 백엔드 서버로 요청하는 전달** 하는 행위를 뜻한다.
+  * 리버스 프록시 서버(엔진엑스)는 요청을 전달하고, 실제 요청에 대한 처리는 뒷단의 웹 애플리케이션 서버들이 처리한다.
+
+
+
+* 리버스 프록시를 통해 무중단 배포 환경을 구축한다. 엔진엑스를 이용한 무중단 배포를 하는 이유는 **가장 저렴하기 때문이다.**
+  * 사내 비용 지원이 많다면 번거롭게 구축할 필요 없이 AWS 블루 그린 배포 방식을 선택하면 된다.
+
+
+
+* 기존에 쓰던 EC2에 그대로 적용하면 되므로 배포를 위해 AWS EC2 인스턴스가 하나 더 필요하지 않다.
+* 구조는 간단하다. 하나의 EC2 혹은 리눅스 서버에 엔진엑스 1대와 **스프링 부트 Jar를 2대** 를 사용하는 것이다.
+  * 엔진엑스는 80(http), 443(https) 포트를 할당한다.
+  * 스프링 부트1은 8081 포트로 실행한다.
+  * 스프링 부트2는 8082 포트로 실행한다.
+
