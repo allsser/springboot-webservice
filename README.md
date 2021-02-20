@@ -371,7 +371,7 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
    import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
    import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
    
-   @Extend(SpringExtension.class)	// {2}
+   @ExtendWith(SpringExtension.class)	// {2}
    @WebMvcTest(controllers = HelloController.class)	// {3}
    public class HelloControllerTset {
    
@@ -394,9 +394,9 @@ dependencies { // 프로젝트 개발에 필요한 의존성들을 선언하는 
      * JUnit4 에서 JUnit5로 넘어오면서 달라졌다.(교재에서는 JUnit4 사용, 현재 프로젝트는 JUnit5)
      * import 패키지 : org.junit.Test (JUnit4) -> **org.junit.jupiter.api.Tset (JUnit5)**
 
-   * {2} **@Extend(SpringExtension.class)**
+   * {2} **@ExtendWith(SpringExtension.class)**
 
-     * 어노테이션 : @RunWith (Junit4) -> **@Extend(JUnit5)**
+     * 어노테이션 : @RunWith (Junit4) -> **@ExtendWith(JUnit5)**
      * import 패키지 : org.junit.runner.RunWith (Junit4) -> **org.junit.jupiter.api.extension.ExtenWith (JUnit5)**
      * 테스트를 진행할 떄 Junit에 내장된 실행자 외에 다른 실행자를 실행시킨다.
      * 여기서는 **SpringExtension (JUnit)** 라는 스프링 실행자를 사용한다. (SpringRunner (Junit4))
@@ -2708,8 +2708,7 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
                   .and()
                       .authorizeRequests()	//	{3}
                       .antMatchers("/", "/css/**", "/images/**",	
-                      				"/js/**", "/h2-console/**", 
-                      				"/profile").permitAll()
+                      				"/js/**", "/h2-console/**").permitAll()
                       .antMatchers("/api/v1/**").hasRole(Role.USER.name())	//	{4}
                       .anyRequest().authenticated()	//	{5}
                   .and()
@@ -2722,61 +2721,61 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
       }
   }
   ```
-
-  * {1} **@EnableWebSecurity**
-
-    * Spring Security 설정들을 활성화시켜준다.
-
-  * {2} **csrf( ).disable( ).headers( ).frameOptions( ).disable( )**
-
-    * h2-console 화면을 사용하기 위해 해당 옵션들을 disable 한다.
-
-  * {3} **authorizeRequests**
-
-    * URL별 권한 관리를 설정하는 옵션의 시작점이다.
+  
+* {1} **@EnableWebSecurity**
+  
+  * Spring Security 설정들을 활성화시켜준다.
+  
+* {2} **csrf( ).disable( ).headers( ).frameOptions( ).disable( )**
+  
+  * h2-console 화면을 사용하기 위해 해당 옵션들을 disable 한다.
+  
+* {3} **authorizeRequests**
+  
+  * URL별 권한 관리를 설정하는 옵션의 시작점이다.
     * authorizeRequests가 선언되어야만 antMatchers옵션을 사용할 수 있다.
-
-  * {4} **antMatchers**
-
-    * 권한 관리 대상을 지정하는 옵션이다.
+  
+* {4} **antMatchers**
+  
+  * 권한 관리 대상을 지정하는 옵션이다.
     * URL, HTTP 메소드별로 관리가 가능하다.
     * "/" 등 지정된 URL들은 permitAll( ) 옵션을 통해 전체 연람 권한을 주었다.
     * "/api/v1/**" 주소를 가진 API는 USER 권한을 가진 사람만 가능하도록 했다.
-
-  * {5} **anyRequest**
-
-    * 설정된 값들 이외 나머지 URL들을 나타낸다.
+  
+* {5} **anyRequest**
+  
+  * 설정된 값들 이외 나머지 URL들을 나타낸다.
     * 여기서는 authenticated( )을 추가하여 나머지 URL들은 모두 인증된 사용자들에게 만 허용하게 한다.
-
-  * {6} **logout( ).logoutSuccessUrl("/")**
-
-    * 로그아웃 기능에 대한 여러 설정의 진입점이다.
+  
+* {6} **logout( ).logoutSuccessUrl("/")**
+  
+  * 로그아웃 기능에 대한 여러 설정의 진입점이다.
     * 로그아웃 성공시 / 주소로 이동한다.
-
-  * {7} **oauth2Login**
-
-    * OAuth 2 로그인 기능에 대한 여러 설정의 진입점이다.
-
-  * {8} **userInfoEndpoint**
-
-    * OAuth 2 로그인 성공 이후 사용자 정보를 가져올 때의 설정들을 담당한다.
-
-  * {9} **userService**
-
-    * 소셜 로그인 성공 시 후속 조치를 진행할 UserService 인터페이스의 구현체를 등록한다.
+  
+* {7} **oauth2Login**
+  
+  * OAuth 2 로그인 기능에 대한 여러 설정의 진입점이다.
+  
+* {8} **userInfoEndpoint**
+  
+  * OAuth 2 로그인 성공 이후 사용자 정보를 가져올 때의 설정들을 담당한다.
+  
+* {9} **userService**
+  
+  * 소셜 로그인 성공 시 후속 조치를 진행할 UserService 인터페이스의 구현체를 등록한다.
     * 리소스 서버(즉, 소셜 서비스들)에서 사용자 정보를 가져온 상태에서 추가로 진행하고자 하는 기능을 명시할 수 있다.
-
-    
-
-  * 설정 코드 작성이 끝나면 **CustomOAuth2UserService** 클래스를 생성한다.
-
-  * 이 클래스에서는 구글 로그인 이후 가져온 사용자의 정보(email, name, picture 등)들을 기반으로 가입 및 정보수정, 세션 저장 등의 기능을 지원한다.
-
-  * .../config/auth/CustomOAuth2UserService
-
-  **CustomOAuth2UserService**
-
-  ```CustomOAuth2UserService
+  
+  
+  
+* 설정 코드 작성이 끝나면 **CustomOAuth2UserService** 클래스를 생성한다.
+  
+* 이 클래스에서는 구글 로그인 이후 가져온 사용자의 정보(email, name, picture 등)들을 기반으로 가입 및 정보수정, 세션 저장 등의 기능을 지원한다.
+  
+* .../config/auth/CustomOAuth2UserService
+  
+**CustomOAuth2UserService**
+  
+```CustomOAuth2UserService
   import com.allsser.book.springboot.domain.user.User;
   import com.allsser.book.springboot.domain.user.UserRepository;
   import lombok.RequiredArgsConstructor;
@@ -2835,30 +2834,30 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
       }
   }
   ```
-
-  * {1} **registrationId**
-
-    * 현재 로그인 진행 중인 서비스를 구분하는 코드이다.
+  
+* {1} **registrationId**
+  
+  * 현재 로그인 진행 중인 서비스를 구분하는 코드이다.
     * 지금은 구글만 사용하는 불필요한 값이지만, 이후 네이버 로그인 연동 시에 네이버 로그인인지, 구글 로그인인지 구분하기 위해 사용한다.
-
-  * {2} **userNameAttributeName**
-
-    * OAuth2 로그인 진행 시 키가 되는 필드값을 이야기한다. Primary Key와 같은 의미이다.
+  
+* {2} **userNameAttributeName**
+  
+  * OAuth2 로그인 진행 시 키가 되는 필드값을 이야기한다. Primary Key와 같은 의미이다.
     * 구글의 경우 기본적으로 코드를 지원하지만, 네이버 카카오 등은 기본 지원하지 않는다. 구글의 기본 코드는 "sub"이다.
     * 네이버 로그인과 구글 로그인을 동시에 지원할 때 사용한다.
-
-  * {3} **OAuthAttributes**
-
-    * OAuth2UserService를 통해 가져온 OAuth2User의 attribute를 담을 클래스이다.
+  
+* {3} **OAuthAttributes**
+  
+  * OAuth2UserService를 통해 가져온 OAuth2User의 attribute를 담을 클래스이다.
     * 이후 네이버 등 다른 소셜 로그인도 이 클래스를 사용한다.
-
-  * {4} **SessionUser**
-
-    * 세션에 사용자 정보를 저장하기 위한 Dto 클래스이다.
-
-    * **왜 User 클래스를 쓰지 않고 새로 만들어서 쓰는지** 설명
-
-      > 만약 User 클래스를 그대로 사용했다면 다음과 같은 에러가 발생한다.
+  
+* {4} **SessionUser**
+  
+  * 세션에 사용자 정보를 저장하기 위한 Dto 클래스이다.
+  
+  * **왜 User 클래스를 쓰지 않고 새로 만들어서 쓰는지** 설명
+  
+    > 만약 User 클래스를 그대로 사용했다면 다음과 같은 에러가 발생한다.
       >
       > ---
       >
@@ -2870,16 +2869,16 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
       > * 오류를 해결하기 위해 User 클래스에 직렬화 코드를 넣으면 될까? 많은 생각이 필요하다.
       > * 이유는 **User 클래스가 엔티티**이기 때문이다. 엔티티 클래스에는 언제 다른 엔티티와 관계가 형성될지 모른다.
       > * 예를 들어 **@OneToMany, @ManyToMany** 등 자식 엔티티를 갖고 있다면 직렬화 대상에 자식들까지 포함되니 **성능 이슈, 뷰수 효과**가 발생할 확률이 높다. 그래서 **직렬화 기능을 가진 세션 Dto**를 하나 추가로 만드는 것이 이후 운영 및 유지보수 때 많은 도움이 된다.
-
-    
-
-  * 구글 사용자 정보가 업데이트 되었을 때를 대비하여 **update** 기능도 같이 구현하였다. 사용자의 이름(name)이나 프로필 사진(picture)이 변경되면 **User** 엔티티에도 반영된다.
-
-  * **OAuthAttributes는 DTO로 보기** 때문에 **config.auth.dto** 패키지를 만들어 **OAuthAttributes** 클래스를 만들어 준다.
-
-  **OAuthAttributes**
-
-  ```OAuthAttributes
+  
+  
+  
+* 구글 사용자 정보가 업데이트 되었을 때를 대비하여 **update** 기능도 같이 구현하였다. 사용자의 이름(name)이나 프로필 사진(picture)이 변경되면 **User** 엔티티에도 반영된다.
+  
+* **OAuthAttributes는 DTO로 보기** 때문에 **config.auth.dto** 패키지를 만들어 **OAuthAttributes** 클래스를 만들어 준다.
+  
+**OAuthAttributes**
+  
+```OAuthAttributes
   import com.allsser.book.springboot.domain.user.Role;
   import com.allsser.book.springboot.domain.user.User;
   import lombok.Builder;
@@ -2935,25 +2934,25 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
       }
   }
   ```
-
-  * {1} **of( )**
-
-    * OAuth2User에서 반환하는 사용자 정보는 Map이기 때문에 값 하나하나 변환해야 한다.
-
-  * {2} **toEntitiy( )**
-
-    * User 엔티티를 생성한다.
+  
+* {1} **of( )**
+  
+  * OAuth2User에서 반환하는 사용자 정보는 Map이기 때문에 값 하나하나 변환해야 한다.
+  
+* {2} **toEntitiy( )**
+  
+  * User 엔티티를 생성한다.
     * OAuthAttributes에서 엔티티를 생성하는 시점은 처음 가입할 때이다.
     * 가입할 때의 기본 권한을 GUEST로 주기 위해서 role 빌더값에는 Role.GUEST를 사용한다.
     * OAuthAttributes 클래스 생성이 끝났으면 같은 패키지에 SessionUser 클래스를 생성한다.
-
-    
-
-  * config.auth.dto 패키지에 **SessionUser** 클래스를 추가한다.
-
-  **SessionUser**
-
-  ```SessionUser
+  
+  
+  
+* config.auth.dto 패키지에 **SessionUser** 클래스를 추가한다.
+  
+**SessionUser**
+  
+```SessionUser
   import com.allsser.book.springboot.domain.user.User;
   import lombok.Getter;
   
@@ -2972,8 +2971,8 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
       }
   }
   ```
-
-  * SessionUser에는 **인증된 사용자 정보**만 필요하다. 그 외에 필요한 정보들은 없으니  name, email, picture만 필드로 선언한다.
+  
+* SessionUser에는 **인증된 사용자 정보**만 필요하다. 그 외에 필요한 정보들은 없으니  name, email, picture만 필드로 선언한다.
 
 
 
@@ -5782,32 +5781,8 @@ deploy:
   ![배포완료](images/배포완료.png)
 
   * 신규 버전이 정상적으로 배포되는 것을 확인할 수 있다.
-
-
-
-#### 9.6 CodeDeploy 로그 확인
-
-* CodeDeployd와 같이 AWS가 지원하는 서비스에서 오류가 발생 했을때 배포가 실패한 오류를 보기 위해서 로그를 확인한다.
-
-* CodeDeploy에 관한 대부분의 내용은 **/opt/codedeploy-agent/deployment-root** 에 있다. 해당 디렉토리로 이동(cd /opt/codedeploy-agent/deployment-root)한 뒤 목록을 확인해 보면 다음과 같은 내용을 확인할 수 있다. 
-
-  ![deployment-root](images/deployment-root.png)
-
-  * **최상단의 영문과 대시( - )가 있는 디렉토리명은 CodeDeploy ID 이다.**
-    * 사용자마다 고유한 ID가 생성되어 각자 다른 ID가 발급되니 본인의 서버에는 다른 코드로 되어있다.
-    * 해당 디렉토리로 들어가 보면 **배포한 단위별로 배포 파일들이** 있다.
-  * **/opt/codedeploy-agent/deployment-root/deployment-logs/codedeploy-agent-deployments.log**
-    * CodeDeploy 로그 파일이다.
-    * CodeDeploy로 이루어지는 배포 내용 중 표준 입/출력 내용은 모두 여기에 담겨 있다.
-    * 작성한 echo 내용도 모두 표기된다.
-
-
-
-* 테스트, 빌드, 배포까지 전부 자동화되었다.
-* 작업이 끝난 내용을 **Master 브랜치에 푸시만 하면 자동으로 EC2에 배포** 가 된다.
-* 문제는 **배포하는 동안** 스프링 부트 프로젝트는 종료 상태가 되어 **서비스를 이용할 수 없다** 는 것이다.
-
-
+  
+    
 
 ----
 
@@ -5952,3 +5927,162 @@ deploy:
   > sudo service nginx restart
 
 * 엔진엑스가 스프링 부트 프로젝트를 프록시하는 것을 확인할 수 있다.
+
+
+
+#### 10.3 무중단 배포 스크립트 만들기
+
+* 무중단 배포 스크립트 작업 전에 API를 하나 추가한다. 이 API는 이후 배포 시에 8081 을 쓸지, 8082를 쓸 지 판단하는 기준이 된다.
+
+
+
+**Profile API 추가**
+
+* ProfileController를 만들어 다음과 같이 간단한 API 코드를 추가한다.
+
+  **src/main/java/com/allsser/book/springboot/web/ProfileController**
+
+  ```ProfileController
+  import lombok.RequiredArgsConstructor;
+  import org.springframework.core.env.Environment;
+  import org.springframework.web.bind.annotation.GetMapping;
+  import org.springframework.web.bind.annotation.RestController;
+  
+  import java.util.Arrays;
+  import java.util.List;
+  
+  @RequiredArgsConstructor
+  @RestController
+  public class ProfileController {
+      private final Environment env;
+  
+      @GetMapping("/profile")
+      public String profile() {
+          List<String> profiles = Arrays.asList(env.getActiveProfiles());					// {1}
+          List<String> realProfiles = Arrays.asList("real", "real1", "real2");
+          String defaultProfile = profiles.isEmpty()? "default" : "profiles.get(0)";
+  
+          return profiles.stream()
+                  .filter(realProfiles::contains)
+                  .findAny()
+                  .orElse(defaultProfile);
+      }
+  }
+  ```
+
+  * {1} **env.getActiveProfiles( )**
+    * 현재 실행 중인 ActiveProfile을 모두 가져온다.
+    * 즉, real, oauth, real-db 등이 활성화되어 있다면(active) 3개가 모두 담겨 있다.
+    * 여기서 real, real1, real2는 모두 배포에 사용될 profile이라 이 중 하나라도 있으면 그 값을 반환하도록 한다.
+    * 실제로 이번 무중단 배포에서는 real1과 real2만 사용되지만, step2를 다시 사용해 볼 수도 있으니 real도 남겨둔다.
+
+
+
+* 이 코드가 잘 작동하는지 테스트 코드를 작성해 본다.
+
+* 해당 컨트롤러는 특별히 **스프링 환경이 필요하지 않는다.** 그래서 **@SpringBootTest** 없이 테스트 코드를 작성한다.
+
+  **src/test/java/com/allser/book/springboot/web/ProfileControllerUnitTest**
+
+  ```ProfileControllerUnitTest
+  import org.junit.jupiter.api.Test;
+  import org.springframework.mock.env.MockEnvironment;
+  
+  import static org.assertj.core.api.Assertions.assertThat;
+  
+  public class ProfileControllerUnitTest {
+      
+      @Test
+      public void real_profile이_조회된다() {
+          //given
+          String expectedProfile = "real";
+          MockEnvironment env = new MockEnvironment();
+          env.addActiveProfile(expectedProfile);
+          env.addActiveProfile("oauth");
+          env.addActiveProfile("real-db");
+          
+          ProfileController controller = new ProfileController(env);
+          
+          //when
+          String profile = controller.profile();
+          
+          //then
+          assertThat(profile).isEqualTo(expectedProfile);
+      }
+      
+      @Test
+      public void active_profile이_없으면_default가_조회된다() {
+          //given
+          String expectedProfile = "default";
+          MockEnvironment env = new MockEnvironment();
+          ProfileController controller = new ProfileController(env);
+          
+          //when
+          String profile = controller.profile();
+          
+          //then
+          assertThat(profile).isEqualTo(expectedProfile);
+      }
+  }
+  ```
+
+  * ProfileController나 Environment 모두 **자바 클래스(인터페이스)** 이기 때문에 쉽게 테스트 할 수 있다.
+  * Environment는 인터페이스라 가짜 구현 체인 **MockEnvironment(스프링에서 제공)** 를 사용해서 테스트하면 된다.
+    * 이렇게 해보면 **생성자 DI가 얼마나 유용한지** 알 수 있다.
+    * 만약 Environment를 @Autowired로 DI 받았다면 **이런 테스트 코드를 작성하지 못한다.** 항상 스프링 테스트를 해야 한다.
+
+
+
+* **/profile** 이 **인증 없이도 호출될 수 있게** SecurityConfig 클래스에 제외 코드를 추가한다. 
+
+  **~/springboot/config/auth/SecurityConfig**
+
+  ```SecurityConfig
+  .antMatchers("/", "/css/**", "/images/**",  "/js/**", "/h2-console/**", "/profile").permitAll()
+  ```
+
+  * permitAll 마지막에 "/profile"이 추가된다.
+
+
+
+* SecurityConfig 설정이 잘 되었는지 테스트 코드로 검증한다.
+
+* 이 검증은 스프링 시큐리티 설정을 불러와야 하니 **@SpringBootTest** 를 사용하는 테스트 클래스(ProfileControllerTest)를 하나 더 추가한다.
+
+  **src/test/java/com/allser/book/springboot/web/ProfileControllerTest**
+
+  ```ProfileControllerTest
+  import org.junit.jupiter.api.Test;
+  import org.junit.jupiter.api.extension.ExtendWith;
+  import org.springframework.beans.factory.annotation.Autowired;
+  import org.springframework.boot.test.context.SpringBootTest;
+  import org.springframework.boot.test.web.client.TestRestTemplate;
+  import org.springframework.boot.web.server.LocalServerPort;
+  import org.springframework.http.HttpStatus;
+  import org.springframework.http.ResponseEntity;
+  import org.springframework.test.context.junit.jupiter.SpringExtension;
+  
+  import static org.assertj.core.api.Assertions.assertThat;
+  
+  @ExtendWith(SpringExtension.class)
+  @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+  public class ProfileControllerTest {
+  
+      @LocalServerPort
+      private int port;
+  
+      @Autowired
+      private TestRestTemplate restTemplate;
+  
+      @Test
+      public void profile은_인증없이_호출된다() throws Exception {
+          String expected = "default";
+  
+          ResponseEntity<String> response = restTemplate.getForEntity("/profile", String.class);
+          assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+          assertThat(response.getBody()).isEqualTo(expected);
+      }
+  }
+  ```
+
+  
