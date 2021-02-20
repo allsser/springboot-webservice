@@ -1,10 +1,37 @@
 com/allsser/book/springboot/web/dto/PostsSaveRequesrDto.java
  com.allsser.book.springboot.web.dto.PostsSaveRequesrDto
  com.allsser.book.springboot.web.dto.PostsSaveRequesrDto$PostsSaveRequesrDtoBuilder
-com/allsser/book/springboot/domain/posts/PostsRepository.java
- com.allsser.book.springboot.domain.posts.PostsRepository
 com/allsser/book/springboot/domain/user/UserRepository.java
  com.allsser.book.springboot.domain.user.UserRepository
+com/allsser/book/springboot/web/ProfileController.java
+ com.allsser.book.springboot.web.ProfileController
+com/allsser/book/springboot/config/auth/dto/OAuthAttributes.java
+ com.allsser.book.springboot.config.auth.dto.OAuthAttributes
+ com.allsser.book.springboot.config.auth.dto.OAuthAttributes$OAuthAttributesBuilder
+com/allsser/book/springboot/config/auth/CustomOAuth2UserService.java
+ com.allsser.book.springboot.config.auth.CustomOAuth2UserService
+com/allsser/book/springboot/domain/BaseTimeEntity.java
+ com.allsser.book.springboot.domain.BaseTimeEntity
+com/allsser/book/springboot/domain/posts/Posts.java
+ com.allsser.book.springboot.domain.posts.Posts
+ com.allsser.book.springboot.domain.posts.Posts$PostsBuilder
+com/allsser/book/springboot/web/dto/PostsResponseDto.java
+ com.allsser.book.springboot.web.dto.PostsResponseDto
+com/allsser/book/springboot/domain/user/Role.java
+ com.allsser.book.springboot.domain.user.Role
+com/allsser/book/springboot/config/auth/LoginUser.java
+ com.allsser.book.springboot.config.auth.LoginUser
+com/allsser/book/springboot/web/dto/HelloResponseDto.java
+ com.allsser.book.springboot.web.dto.HelloResponseDto
+com/allsser/book/springboot/web/PostsApiController.java
+ com.allsser.book.springboot.web.PostsApiController
+com/allsser/book/springboot/domain/user/User.java
+ com.allsser.book.springboot.domain.user.User
+ com.allsser.book.springboot.domain.user.User$UserBuilder
+com/allsser/book/springboot/web/IndexController.java
+ com.allsser.book.springboot.web.IndexController
+com/allsser/book/springboot/domain/posts/PostsRepository.java
+ com.allsser.book.springboot.domain.posts.PostsRepository
 com/allsser/book/springboot/Application.java
  com.allsser.book.springboot.Application
 com/allsser/book/springboot/service/posts/PostsService.java
@@ -14,40 +41,15 @@ com/allsser/book/springboot/web/dto/PostsUpdateRequestDto.java
  com.allsser.book.springboot.web.dto.PostsUpdateRequestDto$PostsUpdateRequestDtoBuilder
 com/allsser/book/springboot/web/HelloController.java
  com.allsser.book.springboot.web.HelloController
-com/allsser/book/springboot/config/auth/dto/OAuthAttributes.java
- com.allsser.book.springboot.config.auth.dto.OAuthAttributes
- com.allsser.book.springboot.config.auth.dto.OAuthAttributes$OAuthAttributesBuilder
-com/allsser/book/springboot/config/auth/CustomOAuth2UserService.java
- com.allsser.book.springboot.config.auth.CustomOAuth2UserService
 com/allsser/book/springboot/config/auth/LoginUserArgumentResolver.java
  com.allsser.book.springboot.config.auth.LoginUserArgumentResolver
-com/allsser/book/springboot/domain/BaseTimeEntity.java
- com.allsser.book.springboot.domain.BaseTimeEntity
 com/allsser/book/springboot/config/auth/dto/SessionUser.java
  com.allsser.book.springboot.config.auth.dto.SessionUser
-com/allsser/book/springboot/domain/posts/Posts.java
- com.allsser.book.springboot.domain.posts.Posts
- com.allsser.book.springboot.domain.posts.Posts$PostsBuilder
-com/allsser/book/springboot/web/dto/PostsResponseDto.java
- com.allsser.book.springboot.web.dto.PostsResponseDto
 com/allsser/book/springboot/web/dto/PostsListResponseDto.java
  com.allsser.book.springboot.web.dto.PostsListResponseDto
-com/allsser/book/springboot/domain/user/Role.java
- com.allsser.book.springboot.domain.user.Role
 com/allsser/book/springboot/config/auth/SecurityConfig.java
  com.allsser.book.springboot.config.auth.SecurityConfig
-com/allsser/book/springboot/config/auth/LoginUser.java
- com.allsser.book.springboot.config.auth.LoginUser
 com/allsser/book/springboot/config/JpaConfig.java
  com.allsser.book.springboot.config.JpaConfig
-com/allsser/book/springboot/web/dto/HelloResponseDto.java
- com.allsser.book.springboot.web.dto.HelloResponseDto
-com/allsser/book/springboot/web/PostsApiController.java
- com.allsser.book.springboot.web.PostsApiController
-com/allsser/book/springboot/domain/user/User.java
- com.allsser.book.springboot.domain.user.User
- com.allsser.book.springboot.domain.user.User$UserBuilder
 com/allsser/book/springboot/config/WebConfig.java
  com.allsser.book.springboot.config.WebConfig
-com/allsser/book/springboot/web/IndexController.java
- com.allsser.book.springboot.web.IndexController
