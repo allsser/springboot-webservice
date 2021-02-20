@@ -6085,4 +6085,45 @@ deploy:
   }
   ```
 
+
+
+* 모든 테스트가 성공했다면 깃허브로 푸시하여 배포 한다.
+* 배포가 끝나면 브라우저에서 /profile로 접속하서 profile이 잘 나오는지 확인한다.
+  * 브라우저에 real 이 뜨는것을 확인할 수 있다.
+
+
+
+**real1, real2 profile 생성**
+
+* 현재 EC2 환경에서 실행되는 profile은 real 밖에 없다.
+
+* 해당 profile은 **Travis CI 배포 자동화를 위한** profile이니 무중단 배포를 위한 profile 2개(real, real2)를 src/main/resources 아래에 추가한다.
+
+  **src/main/resources/application-real1.properties**
+
+  ```application-real1.properties
+  server.port=8081
+  spring.profiles.include=oauth,real-db
+  spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL57Dialect
+  spring.jpa.properties.hibernate.dialect.storage_engine=innodb
+  spring.datasource.hikari.jdbc-url=jdbc:h2:mem:testdb;MODE=MYSQL
+  spring.datasource.hikari.username=sa
   
+  spring.session.store-type=jdbc
+  ```
+
+  **src/main/resources/application-real2.properties**
+
+  ```application-real1.properties
+  server.port=8082
+  spring.profiles.include=oauth,real-db
+  spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL57Dialect
+  spring.jpa.properties.hibernate.dialect.storage_engine=innodb
+  spring.datasource.hikari.jdbc-url=jdbc:h2:mem:testdb;MODE=MYSQL
+  spring.datasource.hikari.username=sa
+  
+  spring.session.store-type=jdbc
+  ```
+
+  * 2개의 profile은 real profile과 크게 다른 점은 없지만, 한 가지가 다르다.
+  * Server.port가 8080이 아닌 **8081/8082**로 되어 있다. 이부분만 주의해서 생성하고 생성한 후 깃허브로 푸시한다.
