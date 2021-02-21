@@ -6224,7 +6224,7 @@ deploy:
   
   function find_idle_profile() {
     RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/profile)	# {1}
-    if [ ${RESPONE_CODE} -ge 400 ] # 400 보다 크면(즉, 40x/50x 에러 모두 포함)
+    if [ ${RESPONSE_CODE} -ge 400 ] # 400 보다 크면(즉, 40x/50x 에러 모두 포함)
     then
       CURRENT_PROFILE=real2
     else
@@ -6360,7 +6360,7 @@ deploy:
     RESPONSE=$(curl -s http://localhost:${IDLE_PORT}/profile)
     UP_COUNT=$(echo ${RESPONSE} | grep 'real' | wc -1)
     
-    if [ ${up_COUNT} -ge 1 ]
+    if [ ${UP_COUNT} -ge 1 ]
     then # $up_count >= 1 ("real" 문자열이 있는지 검증)
       echo "> Health check 성공"
       switch_proxy
@@ -6436,3 +6436,4 @@ deploy:
 * 깃허브로  푸시한다. 배포가 자동으로 진행되면 CodeDeploy 로그로 잘 진행되는지 확인해 본다.
 
   > tail -f /opt/codedeploy-agent/deployment-root/deployment-logs/codedeploy-agent-deployments.log
+
