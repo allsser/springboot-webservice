@@ -24,7 +24,13 @@ do
     break
   else
     echo "> Health check의 응답을 알 수 없거나 혹은 실행 상태가 아니다."
-    echo "> 엔진엑스에 연결하디 않고 배포를 종료한다."
+    echo "> Health check: ${RESPONSE}"
+  fi
+
+  if [ ${RETRY_COUNT} -eq 10 ]
+  then
+    echo "> Health check 실패."
+    echo "> 엔진엑스에 연결하지 않고 배포를 종료한다."
     exit 1
   fi
 
