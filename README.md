@@ -2773,8 +2773,9 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
   
 * .../config/auth/CustomOAuth2UserService
   
+
 **CustomOAuth2UserService**
-  
+
 ```CustomOAuth2UserService
   import com.allsser.book.springboot.domain.user.User;
   import com.allsser.book.springboot.domain.user.UserRepository;
@@ -2833,8 +2834,8 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
           return userRepository.save(user);
       }
   }
-  ```
-  
+```
+
 * {1} **registrationId**
   
   * 현재 로그인 진행 중인 서비스를 구분하는 코드이다.
@@ -2876,8 +2877,9 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
   
 * **OAuthAttributes는 DTO로 보기** 때문에 **config.auth.dto** 패키지를 만들어 **OAuthAttributes** 클래스를 만들어 준다.
   
+
 **OAuthAttributes**
-  
+
 ```OAuthAttributes
   import com.allsser.book.springboot.domain.user.Role;
   import com.allsser.book.springboot.domain.user.User;
@@ -2933,8 +2935,8 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
                   .build();
       }
   }
-  ```
-  
+```
+
 * {1} **of( )**
   
   * OAuth2User에서 반환하는 사용자 정보는 Map이기 때문에 값 하나하나 변환해야 한다.
@@ -2950,8 +2952,9 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
   
 * config.auth.dto 패키지에 **SessionUser** 클래스를 추가한다.
   
+
 **SessionUser**
-  
+
 ```SessionUser
   import com.allsser.book.springboot.domain.user.User;
   import lombok.Getter;
@@ -2970,8 +2973,8 @@ API를 만들기 위해 총 3개의 클래스가 필요하다.
           this.picture = user.getPicture();
       }
   }
-  ```
-  
+```
+
 * SessionUser에는 **인증된 사용자 정보**만 필요하다. 그 외에 필요한 정보들은 없으니  name, email, picture만 필드로 선언한다.
 
 
@@ -6127,3 +6130,309 @@ deploy:
 
   * 2개의 profile은 real profile과 크게 다른 점은 없지만, 한 가지가 다르다.
   * Server.port가 8080이 아닌 **8081/8082**로 되어 있다. 이부분만 주의해서 생성하고 생성한 후 깃허브로 푸시한다.
+
+
+
+**엔진엑스 설정 수정**
+
+* 무중단 배포의 핵심은 **엔진엑스 설정** 이다.
+
+* 프록시 설정(스프링 부트로 요청을 흘려보내는)이 순식간에 교체된다. 여기서 프록시 설정이 교체될 수 있도록 설정을 추가한다.
+
+* 엔진엑스 설정이 모여있는 **/etc/nginx/conf.d** 에 **service-url.inc** 라는 파일을 하나 생성한다.
+
+  > sudo vim /etc/nginx/conf.d/service-url.inc
+
+* 그리고 다음 코드를 입력한다.
+
+  > set $service_url http://127.0.0.1:8080;
+
+* 해당 파일을 엔진엑스가 사용할 수 있게 설정한다. nginx.conf 파일을 연다.
+
+  > sudo vim /etc/nginx/nginx.conf
+
+  ![service_url추가](images/service_url추가.png)
+
+* 저장하고 종료한 뒤에 재시작한다.
+
+  > sudo service nginx restart
+
+  * **에러?** 현재 엔진엑스 재시작 했을 때 배포한 서비스가 자동으로 꺼진다.
+
+
+
+**배포 스크립트들 작성**
+
+* 먼저 step2와 중복되지 않기 위해 EC2에 step3 디렉토리를 생성한다.
+
+  > mkdir ~/app/step3 && mkdir ~/app/step3/zip
+
+* 무중단 배포는 앞으로 step3를 사용한다. 그래서 appspec.yml 역시 step3 로 배포되도록 수정한다.
+
+  **appspec.yml**
+
+  ```appspec
+  version: 0.0
+  os: linux
+  files:
+    - source: /
+      destination: /home/ec2-user/app/step3/zip/
+      overwrite: yes
+  ```
+
+* 무중단 배포를 진행할 스크립트들은 총 5개이다
+  * **stop.sh** : 기존 엔진엑스에 연결되어 있진 않지만, 실행 중이던 스프링 부트 종료
+  * **start.sh** : 배포할 신규 버전 스프링 부트 프로젝트를 stop.sh로 종료한 'profile' 로 실행
+  * **health.sh** : 'start.sh' 로 실행시킨 프로젝트가 정상적으로 실행됐는지 체크
+  * **switch.sh** : 엔진엑스가 바라보는 스프링 부트를 최신 버전을 변경
+  * **profile.sh** : 앞선 4개 스크립트 파일에서 공용으로 사용할 'profile' 과 포트 체크 로직
+
+
+
+* appspec.yml에 앞선 스크립트를 사용하도록 설정한다.
+
+  ```appspec
+  hooks:
+    AfterInstall:
+      - location: stop.sh # 엔진엑스와 연결되어 있지 않은 스프링 부트를 종료한다.
+        timeout: 60
+        runas: ec2-user
+        
+    ApplicationStart:
+      - location: start.sh # 엔진엑스와 연결되어 있지 않은 port로 새 버전의 스프링 부트를 시작한다.
+        timeout: 60
+        runas: ec2-user
+      
+    ValidateService:
+      - location: health.sh # 새 스프링 부트가 정상적으로 실행됐는지 확인한다.
+        timeout: 60
+        runras: ec2-user
+  ```
+
+  * Jar 파일이 복사된 이후부터 차례로 앞선 스크립트들이 실행된다고 보면 된다.
+
+
+
+* 다음은 각 스크립트이다. 이 스크립트들 역시 scripts 디렉토리에 추가한다.
+
+  **~/scripts/profile.sh**
+
+  ```profile.sh
+  #!/usr/bin/env bash
+  
+  # 쉬고 있는 profile 찾기: real1이 사용 중이면 real2가 쉬고 있고, 반대면 real1이 쉬고 있음
+  
+  function find_idle_profile() {
+    RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/profile)	# {1}
+    if [ ${RESPONE_CODE} -ge 400 ] # 400 보다 크면(즉, 40x/50x 에러 모두 포함)
+    then
+      CURRENT_PROFILE=real2
+    else
+      CURRENT_PROFILE=$(curl -s http://localhost/profile)
+    fi 
+      
+    if [ ${CURRENT_PROFILE} == real1 ]
+    then
+      IDLE_PROFILE=real2		# {2}
+    else
+      IDLE_PROFILE=real1
+    fi 
+      
+    echo "${IDLE_PROFILE}"		# {3}
+  }
+  
+  # 쉬고 있는 profile의 port 찾기
+  function find_idle_port() {
+    IDLE_PROFILE=$(find_idle_profile)
+    
+    if[ ${IDLE_PROFILE} == real1 ]
+    then
+      echo "8081"
+    else
+      echo "8082"
+    fi
+  }
+  ```
+
+  * {1} **$(curl -s -o /dev/null -w "%{http_code}" http://localhost/profile)**
+    * 현재 엔진엑스가 바라보고 있는 스프링 부트가 정상적으로 수행 중인지 확인한다.
+    * 응답값을 HttpStatus로 받는다.
+    * 정상이면 200, 오류가 발생한다면 400~503 사이로 발생하니 400 이상은 모두 예외로 보고 real2를 **현재 profile로 사용**한다.
+  * {2} **IDLE_PROFILE**
+    * 엔진엑스와 연결되지 않은 profile이다.
+    * 스프링 부트 프로젝트를 이 profile로 연결하기 위해 반환한다.
+  * {3} **echo "${IDLE_PROFILE}"**
+    * bash라는 스크립트는 **값을 반환하는 기능이 없다.**
+    * 그래서 **제일 마지막 줄에 echo로 결과를 출력** 후, 클라이언트에서 그 값을 잡아서 ($(find_idle_profile)) 사용한다.
+    * 중간에 echo를 사용해선 안된다.
+
+  **~/scripts/stop.sh**
+
+  ```stop.sh
+  #!/usr/bin/env bash
+  
+  ABSPATH=$(readlink -f $0)
+  ABSDIR=$(dirname $ABSPATH)		# {1}
+  source ${ABSDIR}/profile.sh		# {2}
+  
+  IDLE_PORT=$(find_idle_port)
+  
+  echo "> $IDLE_PORT 에서 구동 중인 애플리케이션 pid 확인"
+  IDLE_PID=$(lsof -ti tcp:${IDLE_PORT})
+  
+  if [ -z ${IDLE_PORT} ]
+  then
+    echo "> 현재 구동 중인 애플리케이션이 없으므로 종료하지 않습니다."
+  else
+    echo "> kill -15 $IDLE_PID"
+    kill -15 ${IDLE_PID}
+    sleep 5
+  fi
+  ```
+
+  * {1} **ABSDIR=$(dirname $ABSPATH)**
+    * 현재 stop.sh가 속해 있는 경로를 찾는다.
+    * 하단의 코드와 같이 profile.sh의 결로를 찾기 위해 사용된다.
+  * {2} **source ${ABSDIR}/profile.sh**
+    * 자바로 보면 일종의 import 구문이다.
+    * 해당 코드로 인해 stop.sh에서도 profile.sh의 여러 function을 사용할 수 있게 된다.
+
+  **~/scripts/start.sh**
+
+  ```start.sh
+  #!/usr/bin/env bash
+  
+  ABSPATH=$(readlink -f $0)
+  ABSDIR=$(dirname $ABSPATH)
+  source ${ABSDIR}/profile.sh
+  
+  REPOSITORY=/home/ec2-user/app/step3
+  PROJECT_NAME=SpringBoot
+  
+  echo "> Build 파일 복사"
+  echo "> cp $REPOSITORY/zip/*.jar $REPOSITORY/"
+  
+  cp $REPOSITORY/zip/*.jar $REPOSITORY/
+  
+  echo "> 새 애플리케이션 배포"
+  JAR_NAME=$(ls -tr $REPOSITORY/*.jar | tail -n 1)
+  
+  echo "> $JAR_NAME: $JAR_NAME"
+  
+  echo "> $JAR_NAME 에 실행권한 추가"
+  
+  chmod +x $JAR_NAME
+  
+  echo "> $JAR_NAME 실행"
+  
+  IDLE_PROFILE=$(find_idle_profile)
+  
+  echo "> $JAR_NAME 를 profile=$IDLE_PROFILE 로 실행한다."
+  nohup java -jar \
+      -Dspring.config.location=classpath:/application.properties,classpath:/application-$IDLE_PROFILE.properties,/home/ec2-user/app/application-oauth.properties,/home/ec2-user/app/application-real-db.properties \
+      -Dspring.profiles.active=$IDLE_PROFILE \
+      $JAR_NAME > $REPOSITORY/nohup.out 2>&1 &
+  ```
+
+  * **기본적인 스크립트는 step2의 deploy.sh와 유사하다.**
+  * **다른 점이라면 IDLE_PROFILE을 통해 properties 파일을 가져오고(application-$IDLE_PROFILE.properties), active profile을 지정하는 것(-Dspring.profiles.active=$IDLE_PROFILE)뿐이다.**
+  * **여기서도 IDLE_PROFILE을 사용하니 profile.sh을 가져와야 한다.**
+
+  **~/scripts/health.sh**
+
+  ```health.sh
+  #!/usr/bin/env bash
+  
+  ABSPATH=$(readlink -f $0)
+  ABSDIR=$(dirname $ABSPATH)
+  source ${ABSDIR}/profile.sh
+  source ${ABSDIR}/switch.sh
+  
+  IDLE_PORT=$(find_idle_port)
+  
+  echo "> Health Check Start!"
+  echo "> IDLE_PORT: $IDLE_PORT"
+  echo "> curl -s http://localhost:$IDLE_PORT/profile"
+  sleep 10
+  
+  for RETRY_COUNT in {1..10}
+  do
+    RESPONSE=$(curl -s http://localhost:${IDLE_PORT}/profile)
+    UP_COUNT=$(echo ${RESPONSE} | grep 'real' | wc -1)
+    
+    if [ ${up_COUNT} -ge 1 ]
+    then # $up_count >= 1 ("real" 문자열이 있는지 검증)
+      echo "> Health check 성공"
+      switch_proxy
+      break
+    else
+      echo "> Health check의 응답을 알 수 없거나 혹은 실행 상태가 아니다."
+      echo "> 엔진엑스에 연결하디 않고 배포를 종료한다."
+      exit 1
+    fi 
+    
+    echo "> Health check 연결 실패. 재시도..."
+    sleep 10
+  done
+  ```
+
+  * **엔진엑스와 연결되지 않은 포트로 스프링 부트가 잘 수행되었는지 체크한다.**
+  * **잘 떴는지 확인되어야 엔진엑스 프록시 설정을 변경(switch_proxy)한다.**
+  * **엔진엑스 프록시 설정 변경은 switch.sh에서 수행한다.**
+
+  **~/scripts/switch.sh**
+
+  ```switch.sh
+  #!/usr/bin/env bash
+  
+  ABSPATH=$(readlink -f $0)
+  ABSDIR=$(dirname $ABSPATH)
+  source ${ABSDIR}/profile.sh
+  
+  function switch_proxy() {
+      IDLE_PORT=$(find_idle_port)
+      
+      echo "> 전환일 Port: $IDLE_PORT"
+      echo "> Port 전환"
+      echo "Set \$service_url http://127.0.0.1:{IDLE_PORT};" | sudo tee /etc/nginx/conf.d/service-url.inc
+      echo "> 엔진엑스 Reload"
+      sudo service nginx reload
+  }
+  ```
+
+  * **echo "set \ $service_url http://127.0.0.1:${IDLE_PROT};"**
+    * 하나의 문장을 만들어 파이프라인( | )으로 넘겨주기 위해 echo를 사용한다.
+    * 엔진엑스가 변경할 프록시 주소를 생성한다.
+    * 쌍따옴표( " )를 사용해야 한다.
+    * 사용하지 않으면 $service_url을 그대로 인식하지 못하고 변수를 찾게 된다.
+  * **|sudo tee/etc/nginx/conf.d/service-url.inc**
+    * 앞에서 넘겨준 문장을 service-url.inc에 덮어쓴다.
+  * **sudo service nginx reload**
+    * 엔진엑스 설정을 다시 불러온다.
+    * restart와는 다르다.
+    * restart는 잠시 끊기는 현상이 있지만, reload는 끊김 없이 다시 불러온다.
+    * 다만, 중요한 설정들은 반영되지 않으므로 restart를 사용해야 한다.
+    * 여기선 외부의 설정 파일인 service-url을 다시 불러오는 거라 reload로 가능하다.
+
+
+
+#### 10.4 무중단 배포 테스트
+
+* 잦은 배포로 Jar 파일명이 겹칠 수 있다. 
+
+* 매번 자동으로 버전값을 변경될 수 있도록 조치한다.
+
+  **build.gradle**
+
+  ```build.gradle
+  version '1.0.1-SNAPSHOT-'+new Date().format("yyyMMddHHmmss")
+  ```
+
+  * **build.gradle을 Groovy 기반의 빌드툴이다.**
+  * **당연히 Groovy 언어의 여러 문법을 사용할 수 있는데, 여기서는 new Date( )로 빌드 할 때마다 그 시간이 버전에 추가되도록 구성한다.**
+
+
+
+* 깃허브로  푸시한다. 배포가 자동으로 진행되면 CodeDeploy 로그로 잘 진행되는지 확인해 본다.
+
+  > tail -f /opt
