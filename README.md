@@ -6435,4 +6435,4 @@ deploy:
 
 * 깃허브로  푸시한다. 배포가 자동으로 진행되면 CodeDeploy 로그로 잘 진행되는지 확인해 본다.
 
-  > tail -f /opt
+  > tail -f /opt/codedeploy-agent/deployment-root/deployment-logs/codedeploy-agent-deployments.log
