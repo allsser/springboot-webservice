@@ -47,9 +47,9 @@ com/allsser/book/springboot/config/auth/dto/SessionUser.java
  com.allsser.book.springboot.config.auth.dto.SessionUser
 com/allsser/book/springboot/web/dto/PostsListResponseDto.java
  com.allsser.book.springboot.web.dto.PostsListResponseDto
-com/allsser/book/springboot/config/auth/SecurityConfig.java
- com.allsser.book.springboot.config.auth.SecurityConfig
-com/allsser/book/springboot/config/JpaConfig.java
- com.allsser.book.springboot.config.JpaConfig
 com/allsser/book/springboot/config/WebConfig.java
  com.allsser.book.springboot.config.WebConfig
+com/allsser/book/springboot/config/JpaConfig.java
+ com.allsser.book.springboot.config.JpaConfig
+com/allsser/book/springboot/config/auth/SecurityConfig.java
+ com.allsser.book.springboot.config.auth.SecurityConfig
