@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.allsser.book.springboot.web.dto.HelloResponseDtoTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2021-02-20T09:15:08" hostname="choechanjong-ui-MacBookPro.local" time="0.057">
+<testsuite name="com.allsser.book.springboot.web.dto.HelloResponseDtoTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2021-02-22T08:11:56" hostname="choechanjong-ui-MacBookPro.local" time="0.073">
   <properties/>
-  <testcase name="롬복_기능_테스트()" classname="com.allsser.book.springboot.web.dto.HelloResponseDtoTest" time="0.057"/>
+  <testcase name="롬복_기능_테스트()" classname="com.allsser.book.springboot.web.dto.HelloResponseDtoTest" time="0.073"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

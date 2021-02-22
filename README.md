@@ -92,6 +92,40 @@
 
 8. ### [EC2 서버에 프로젝트를 배포](#8-ec2-서버에-프로젝트를-배포)
 
+   8.1 [EC2에 프로젝트 Clone 받기]()
+
+   8.2 [배포 스크립트 만들기]()
+
+   8.3 [외부 Security 파일 등록]()
+
+   8.4 [스프링 부트 프로젝트로 RDS 접근하기]()
+
+   8.5 [EC2에서 소셜 로그인하기]()
+
+9. ### [코드가 푸시되면 자동으로 배포 (Travis CI 배포 자동화)]()
+
+   9.1 [CI & CD 소개]()
+
+   9.2 [Travis CI 연동하기]()
+
+   9.3 [Travis CI와 AWS S3 연동하기]()
+
+   9.4 [Travis CI와 AWS S3, CodeDeploy 연동하기]()
+
+   9.5 [배포 자동화 구성]()
+
+   9.6 [CodeDeploy 연동하기]()
+
+10. ### [24시간 365일 중단 없는 서비스 만들기]()
+
+    10.1 [무중단 배포 소개]()
+
+    10.2 [엔진엑스 설치와 스프링 부트 연동하기]()
+
+    10.3 [무중단 배포 스크립트 만들기]()
+
+    10.4 [무중단 배포 테스트]()
+
 ---
 
 ### 1. Intellij Springboot start
@@ -5789,7 +5823,7 @@ deploy:
 
 ----
 
-### 10. 24시간 365일 중간 없는 서비스 만들기
+### 10. 24시간 365일 중단 없는 서비스 만들기
 
 * 배포하는 동안 애플리케이션이 종료된다는 문제가 있다.
 
@@ -6359,7 +6393,7 @@ deploy:
   do
     RESPONSE=$(curl -s http://localhost:${IDLE_PORT}/profile)
     UP_COUNT=$(echo ${RESPONSE} | grep 'real' | wc -l)
-    
+  
     if [ ${UP_COUNT} -ge 1 ]
     then # $up_count >= 1 ("real" 문자열이 있는지 검증)
       echo "> Health check 성공"
@@ -6367,21 +6401,27 @@ deploy:
       break
     else
       echo "> Health check의 응답을 알 수 없거나 혹은 실행 상태가 아니다."
-      echo "> 엔진엑스에 연결하디 않고 배포를 종료한다."
+      echo "> Health check: ${RESPONSE}"
+    fi
+  
+    if [ ${RETRY_COUNT} -eq 10 ]
+    then
+      echo "> Health check 실패."
+      echo "> 엔진엑스에 연결하지 않고 배포를 종료한다."
       exit 1
-    fi 
-    
+  fi
+  
     echo "> Health check 연결 실패. 재시도..."
     sleep 10
-  done
+done
   ```
 
   * **엔진엑스와 연결되지 않은 포트로 스프링 부트가 잘 수행되었는지 체크한다.**
   * **잘 떴는지 확인되어야 엔진엑스 프록시 설정을 변경(switch_proxy)한다.**
   * **엔진엑스 프록시 설정 변경은 switch.sh에서 수행한다.**
-
+  
   **~/scripts/switch.sh**
-
+  
   ```switch.sh
   #!/usr/bin/env bash
   
@@ -6393,13 +6433,13 @@ deploy:
       IDLE_PORT=$(find_idle_port)
       
       echo "> 전환일 Port: $IDLE_PORT"
-      echo "> Port 전환"
+    echo "> Port 전환"
       echo "Set \$service_url http://127.0.0.1:{IDLE_PORT};" | sudo tee /etc/nginx/conf.d/service-url.inc
       echo "> 엔진엑스 Reload"
       sudo service nginx reload
   }
   ```
-
+  
   * **echo "set \ $service_url http://127.0.0.1:${IDLE_PROT};"**
     * 하나의 문장을 만들어 파이프라인( | )으로 넘겨주기 위해 echo를 사용한다.
     * 엔진엑스가 변경할 프록시 주소를 생성한다.
@@ -6436,4 +6476,25 @@ deploy:
 * 깃허브로  푸시한다. 배포가 자동으로 진행되면 CodeDeploy 로그로 잘 진행되는지 확인해 본다.
 
   > tail -f /opt/codedeploy-agent/deployment-root/deployment-logs/codedeploy-agent-deployments.log
+  
+  * 정상적으로 배포가 되었다면 실행 과정의 로그나 나온다.
+  
+* 스프링 부트 로그도 보고 싶다면 다음 명령어로 확인할 수 있다.
 
+  > vim ~/app/step3/nohup.out
+
+  * 스프링 부트 실행 로그를 직접 볼 수 있다.
+
+* 한 번 더 배포하면 그때는 **step2**로 배포된다. 이 과정에서 브라우저 새로고침을 해보면 전혀 중단 없는 것을 확인할 수 있다.
+
+* 2번 배포를 진행한 뒤에 다음과 같이 자바 애플리케이션 실행 여부를 확인한다.
+
+  > ps -ef | grep java
+
+  * 다음과 같이 2개의 애플리케이션이 실행되고 있음을 알 수 있다.
+
+  ![실행여부](images/실행여부.png)
+
+
+
+* 이제 이 시스템은 마스터 브랜치에 푸시가 발생하면 자동으로 서버 배포가 진행되고, 서버 중단 역시 전혀 없는 시스템이 되었다.
