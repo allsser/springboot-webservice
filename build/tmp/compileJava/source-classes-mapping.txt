@@ -3,13 +3,13 @@ com/allsser/book/springboot/web/dto/PostsSaveRequesrDto.java
  com.allsser.book.springboot.web.dto.PostsSaveRequesrDto$PostsSaveRequesrDtoBuilder
 com/allsser/book/springboot/domain/user/UserRepository.java
  com.allsser.book.springboot.domain.user.UserRepository
-com/allsser/book/springboot/config/JpaConfig.java
- com.allsser.book.springboot.config.JpaConfig
+com/allsser/book/springboot/web/ProfileController.java
+ com.allsser.book.springboot.web.ProfileController
+com/allsser/book/springboot/config/auth/CustomOAuth2UserService.java
+ com.allsser.book.springboot.config.auth.CustomOAuth2UserService
 com/allsser/book/springboot/config/auth/dto/OAuthAttributes.java
  com.allsser.book.springboot.config.auth.dto.OAuthAttributes
  com.allsser.book.springboot.config.auth.dto.OAuthAttributes$OAuthAttributesBuilder
-com/allsser/book/springboot/config/auth/CustomOAuth2UserService.java
- com.allsser.book.springboot.config.auth.CustomOAuth2UserService
 com/allsser/book/springboot/domain/BaseTimeEntity.java
  com.allsser.book.springboot.domain.BaseTimeEntity
 com/allsser/book/springboot/domain/posts/Posts.java
@@ -47,9 +47,9 @@ com/allsser/book/springboot/config/auth/dto/SessionUser.java
  com.allsser.book.springboot.config.auth.dto.SessionUser
 com/allsser/book/springboot/web/dto/PostsListResponseDto.java
  com.allsser.book.springboot.web.dto.PostsListResponseDto
-com/allsser/book/springboot/config/WebConfig.java
- com.allsser.book.springboot.config.WebConfig
-com/allsser/book/springboot/web/ProfileController.java
- com.allsser.book.springboot.web.ProfileController
 com/allsser/book/springboot/config/auth/SecurityConfig.java
  com.allsser.book.springboot.config.auth.SecurityConfig
+com/allsser/book/springboot/config/JpaConfig.java
+ com.allsser.book.springboot.config.JpaConfig
+com/allsser/book/springboot/config/WebConfig.java
+ com.allsser.book.springboot.config.WebConfig
